@@ -1,0 +1,62 @@
+# 熱解析で使用する定数定義
+
+# 物理定数
+physical_constants:
+  solar_constant: 1367.0  # 太陽定数 [W/m^2]
+  earth_albedo: 0.3      # 地球アルベド
+  earth_ir: 221.0        # 地球赤外線 [W/m^2]
+  stefan_boltzmann: 5.67e-8  # ステファン・ボルツマン定数 [W/m^2/K^4]
+  enable_albedo: true    # アルベド熱の計算を有効にするかどうか
+  enable_earth_ir: true  # 地球赤外熱の計算を有効にするかどうか
+
+# 衛星寸法 [mm]
+satellite_dimensions:
+  length_x: 100.0  # X方向長さ
+  length_y: 100.0  # Y方向長さ
+  length_z: 100.0  # Z方向長さ
+
+# 内部発熱 [W]
+internal_heat:
+  PX: 0.0    # +X面
+  MX: 0.0    # -X面
+  PY: 0.0    # +Y面
+  MY: 0.0    # -Y面
+  PZ: 0.0    # +Z面
+  MZ: 0.0    # -Z面
+
+# 衛星の姿勢パラメータ
+satellite_attitude:
+  # 地球周回軌道での姿勢制御モード
+  # 第1軸と第2軸の向きを指定
+  earth_orbit_mode:
+    primary_axis: "sun_pointing"    # 第1軸の向き（PZ軸）
+                                   # 選択肢: "sun_pointing", "nadir_pointing", "velocity_vector", "custom"
+    secondary_axis:                 # 第2軸の設定
+      axis: "PY"                    # 第2軸の選択（"PX"または"PY"）
+      direction: "velocity_vector"     # 第2軸の向き
+                                   # 選択肢: "nadir_pointing", "sun_pointing", "velocity_vector", "orbit_normal", "custom"
+  # カスタム姿勢の場合の回転行列（オイラー角）[度]
+  # 注意: primary_axis または secondary_axis.direction が "custom" の場合に使用
+  # 基準姿勢（オイラー角が全て0度の状態）:
+  # - PX軸: 軌道の進行方向（速度ベクトル方向）
+  # - PY軸: 軌道面の法線方向
+  # - PZ軸: 地球中心方向（nadir方向）
+  # 回転の順序: ZYX（ヨー→ピッチ→ロール）
+  custom_attitude:
+    roll: 0.0    # X軸周りの回転（右ねじの法則に従う）
+    pitch: 0.0   # Y軸周りの回転（右ねじの法則に従う）
+    yaw: 0.0     # Z軸周りの回転（右ねじの法則に従う）
+
+# 軌道パラメータ
+orbit_parameters:
+  # デフォルト値（コマンドライン引数で上書き可能）
+  default_altitude: 400.0  # 軌道高度 [km]
+  default_beta: 0.0       # ベータ角 [度]
+
+# 解析パラメータ
+analysis_parameters:
+  initial_temperature: 293.15  # 初期温度 [K]
+  time_step: 10             # 時間ステップ [秒]
+  convergence_criteria: 0.01   # 収束判定基準 [K] 
+
+debug: false
