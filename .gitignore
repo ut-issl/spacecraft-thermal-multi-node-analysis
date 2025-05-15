@@ -90,3 +90,9 @@ log/
 *.zip
 *.tar
 *.tar.gz 
+
+# rye
+*.lock
+
+# output
+output/
