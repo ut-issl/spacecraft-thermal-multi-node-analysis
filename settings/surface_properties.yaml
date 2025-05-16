@@ -53,6 +53,13 @@ surface_materials:
     epsilon: 0.76
     description: "銀蒸着テフロン"
 
+  MLI:
+    name: "Multi-Layer Insulation"
+    alpha: 0.14
+    epsilon: 0.04
+    effective_emissivity: 0.03  # MLI特有の実効放射率
+    description: "多層断熱材"
+
   BK:
     name: "Black Kapton"
     alpha: 0.80
@@ -86,7 +93,7 @@ surface_optical_assignments:
         ratio: 1.0
   MY:  # -Y
     outside:
-      - material: "AK"
+      - material: "MLI"
         ratio: 1.0
     inside:
       - material: "Black_Paint"
