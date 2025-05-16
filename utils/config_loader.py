@@ -16,12 +16,22 @@ def load_surface_properties() -> Tuple[Dict[str, SurfaceMaterial], Dict[str, Lis
     # 表面材料の定義を読み込み
     surface_materials = {}
     for name, props in data['surface_materials'].items():
-        surface_materials[name] = SurfaceMaterial(
-            name=name,
-            alpha=props['alpha'],  # solar_absorptance -> alpha
-            epsilon=props['epsilon'],  # infrared_emissivity -> epsilon
-            description=props['description']
-        )
+        # MLIの場合は実効放射率も読み込む
+        if name == 'MLI':
+            surface_materials[name] = SurfaceMaterial(
+                name=name,
+                alpha=props['alpha'],  # solar_absorptance -> alpha
+                epsilon=props['epsilon'],  # infrared_emissivity -> epsilon
+                effective_emissivity=props['effective_emissivity'],  # MLIの実効放射率
+                description=props['description']
+            )
+        else:
+            surface_materials[name] = SurfaceMaterial(
+                name=name,
+                alpha=props['alpha'],  # solar_absorptance -> alpha
+                epsilon=props['epsilon'],  # infrared_emissivity -> epsilon
+                description=props['description']
+            )
     
     return surface_materials, data['surface_optical_assignments']
 

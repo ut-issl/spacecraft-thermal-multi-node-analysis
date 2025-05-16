@@ -123,9 +123,13 @@ def run_earth_orbit_analysis(config: SatelliteConfiguration, altitude: float,
     # 温度履歴の記録
     temperatures = {surface_name: [node.get_temperature(surface_name)] 
                    for surface_name in node.surfaces.keys()}
+    # MLIノードの温度も記録
+    for surface_name, surface in node.surfaces.items():
+        if surface.has_mli:
+            temperatures[f"{surface_name}_MLI"] = [surface.mli_node.temperature]
     
     # 蝕フラグの記録
-    eclipse_flags = [False]  # 初期時刻は蝕外と仮定
+    eclipse_flags = [False]
     
     # 時間積分
     for t in times[1:]:
@@ -170,6 +174,9 @@ def run_earth_orbit_analysis(config: SatelliteConfiguration, altitude: float,
         # 温度履歴の記録
         for surface_name in node.surfaces.keys():
             temperatures[surface_name].append(node.get_temperature(surface_name))
+            # MLIノードの温度も記録
+            if node.surfaces[surface_name].has_mli:
+                temperatures[f"{surface_name}_MLI"].append(node.surfaces[surface_name].mli_node.temperature)
         # 蝕フラグの記録
         eclipse_flags.append(bool(in_eclipse))
     
@@ -209,6 +216,11 @@ def run_deep_space_analysis(config: SatelliteConfiguration,
     # 温度履歴の記録
     temperatures = {surface_name: [node.get_temperature(surface_name)] 
                    for surface_name in node.surfaces.keys()}
+    # MLIノードの温度も記録
+    for surface_name, surface in node.surfaces.items():
+        if surface.has_mli:
+            temperatures[f"{surface_name}_MLI"] = [surface.mli_node.temperature]
+    
     # 蝕フラグの記録（深宇宙では常にFalse）
     eclipse_flags = [False]
 
@@ -221,6 +233,9 @@ def run_deep_space_analysis(config: SatelliteConfiguration,
         node.update_temperature(heat_balances, time_step)
         for surface_name in node.surfaces.keys():
             temperatures[surface_name].append(node.get_temperature(surface_name))
+            # MLIノードの温度も記録
+            if node.surfaces[surface_name].has_mli:
+                temperatures[f"{surface_name}_MLI"].append(node.surfaces[surface_name].mli_node.temperature)
         eclipse_flags.append(False)
 
     return times.tolist(), temperatures, node.heat_input_records, eclipse_flags

@@ -2,7 +2,7 @@ import numpy as np
 from typing import Dict, List, Tuple, Optional
 import os
 from dataclasses import dataclass
-from .dataclasses import MaterialProperties, SurfaceMaterial, HeatInputRecord
+from .dataclasses import MaterialProperties, SurfaceMaterial, HeatInputRecord, MLINode
 from .satellite_config import SatelliteConfiguration
 from .config_loader import load_constants, load_surface_properties, load_material_properties, load_panel_material_assignments
 import pandas as pd
@@ -28,6 +28,38 @@ class Surface:
     area: float  # m^2
     panel: PanelProperties  # パネルの熱物性
     optical_properties: SurfaceOpticalProperties  # 表面光学特性
+    initial_temp: float = None  # 初期温度 [K]
+    has_mli: bool = False  # MLIが装着されているかどうか
+    mli_node: Optional[MLINode] = None  # MLIノード（MLI装着時のみ使用）
+
+    def __post_init__(self):
+        """MLIの有無を判定し、MLIノードを初期化"""
+        # 初期温度が設定されていない場合は設定ファイルから読み込む
+        if self.initial_temp is None:
+            constants = load_constants()
+            # 設定ファイルにinitial_temperatureがない場合は293.15K（20℃）をデフォルト値として使用
+            self.initial_temp = constants.get('initial_temperature', 293.15)
+            
+        # 外側の表面材にMLIが含まれているかチェック
+        for optical_props, _ in self.optical_properties.outside:
+            if optical_props.name == "MLI":
+                self.has_mli = True
+                # MLIの放射率と実効放射率を取得
+                if optical_props.epsilon is None:
+                    raise ValueError(f"MLIの放射率が設定されていません。surface_properties.yamlでMLIのepsilonを設定してください。")
+                if optical_props.effective_emissivity is None:
+                    raise ValueError(f"MLIの実効放射率が設定されていません。surface_properties.yamlでMLIのeffective_emissivityを設定してください。")
+                
+                self.mli_node = MLINode(
+                    surface_name=self.name,
+                    emissivity=optical_props.epsilon,  # 外側カバーフィルムの放射率
+                    effective_emissivity=optical_props.effective_emissivity,  # 実効放射率
+                    temperature=self.initial_temp,  # 初期温度は面と同じ
+                    area=self.area,
+                    heat_input=0.0,
+                    heat_output=0.0
+                )
+                break
 
     def calculate_heat_capacity(self) -> float:
         """面の熱容量を計算 [J/K]"""
@@ -280,11 +312,12 @@ class ThermalNode:
         self.dimensions: Dict[str, float] = {}  # 衛星の寸法
         self._rij_cache = None  # Rijキャッシュ
         self._rij_names = None
+        self.initial_temp = initial_temp
 
     def add_surface(self, surface: Surface):
         """面を追加し、初期温度を設定"""
         self.surfaces[surface.name] = surface
-        self.temperatures[surface.name] = load_constants()['analysis_parameters']['initial_temperature']
+        self.temperatures[surface.name] = self.initial_temp
         self.internal_heat[surface.name] = 0.0
         # 衛星の寸法を取得
         if not self.dimensions:
@@ -294,6 +327,9 @@ class ThermalNode:
         # Rijキャッシュもリセット
         self._rij_cache = None
         self._rij_names = None
+        if surface.has_mli:
+            # MLIノードの温度も初期化
+            surface.mli_node.temperature = self.initial_temp
 
     def set_internal_heat(self, surface_name: str, heat: float):
         """特定の面の内部発熱を設定"""
@@ -351,63 +387,105 @@ class ThermalNode:
         
         # 各面の熱収支を計算
         for surface_name, surface in self.surfaces.items():
-            # 太陽熱の計算
-            solar_heat = surface.calculate_solar_heat(sun_vector, solar_constant, in_eclipse)
-            
-            # 地球からの熱の計算（地球周回の場合）
-            albedo_heat = 0.0
-            earth_ir_heat = 0.0
-            if earth_vector is not None and altitude is not None and orbit_normal is not None:
-                albedo_heat, earth_ir_heat = surface.calculate_earth_heat(
-                    earth_vector, solar_constant, earth_albedo, earth_ir, altitude, sun_vector, orbit_normal
+            if surface.has_mli:
+                # MLIが装着されている場合、外部熱入力はMLIノードに入る
+                solar_heat = surface.calculate_solar_heat(sun_vector, solar_constant, in_eclipse)
+                albedo_heat = 0.0
+                earth_ir_heat = 0.0
+                if earth_vector is not None and (enable_albedo or enable_earth_ir):
+                    albedo_heat, earth_ir_heat = surface.calculate_earth_heat(
+                        earth_vector, solar_constant, earth_albedo, earth_ir,
+                        altitude, sun_vector, orbit_normal
+                    )
+                
+                # MLIノードの熱収支を計算
+                mli_heat_input = solar_heat
+                if enable_albedo:
+                    mli_heat_input += albedo_heat
+                if enable_earth_ir:
+                    mli_heat_input += earth_ir_heat
+                
+                # MLIと宇宙との輻射熱交換を計算（通常の放射率を使用）
+                mli_temp = surface.mli_node.temperature
+                space_temp = 2.73  # 宇宙背景放射温度 [K]
+                mli_space_radiation = stefan_boltzmann * surface.area * surface.mli_node.emissivity * (
+                    mli_temp**4 - space_temp**4
                 )
-                # 設定に基づいて熱量を調整
-                if not enable_albedo:
-                    albedo_heat = 0.0
-                if not enable_earth_ir:
-                    earth_ir_heat = 0.0
-            
-            # 面ごとの合計熱量
-            surface_total_heat = (
-                solar_heat + 
-                albedo_heat + 
-                earth_ir_heat + 
-                interpanel_radiation[surface_name] + 
-                self.internal_heat[surface_name]
-            )
-            heat_balances[surface_name] = surface_total_heat
+                
+                # MLIと面の間の輻射熱交換を計算（実効放射率を使用）
+                surface_temp = self.temperatures[surface_name]
+                # 面の放射率を計算（内側の表面材の放射率の平均）
+                surface_emissivity = sum(opt.epsilon * ratio for opt, ratio in surface.optical_properties.inside)
+                # 輻射熱交換係数を計算（1/(1/ε1 + 1/ε2 - 1)の形式）
+                radiation_coefficient = 1.0 / (1.0/surface.mli_node.effective_emissivity + 1.0/surface_emissivity - 1.0)
+                mli_surface_radiation = stefan_boltzmann * surface.area * radiation_coefficient * (
+                    mli_temp**4 - surface_temp**4
+                )
+                
+                # MLIノードの熱収支を更新
+                surface.mli_node.heat_input = mli_heat_input
+                surface.mli_node.heat_output = mli_space_radiation + mli_surface_radiation
+                
+                # 面の熱収支（MLIとの輻射熱交換と内部発熱のみ）
+                heat_balances[surface_name] = mli_surface_radiation + self.internal_heat.get(surface_name, 0.0)
+            else:
+                # MLIがない場合は従来通りの計算
+                solar_heat = surface.calculate_solar_heat(sun_vector, solar_constant, in_eclipse)
+                albedo_heat = 0.0
+                earth_ir_heat = 0.0
+                if earth_vector is not None and (enable_albedo or enable_earth_ir):
+                    albedo_heat, earth_ir_heat = surface.calculate_earth_heat(
+                        earth_vector, solar_constant, earth_albedo, earth_ir,
+                        altitude, sun_vector, orbit_normal
+                    )
+                
+                # 面の熱収支を計算
+                heat_balances[surface_name] = (
+                    solar_heat +
+                    (albedo_heat if enable_albedo else 0.0) +
+                    (earth_ir_heat if enable_earth_ir else 0.0) +
+                    self.internal_heat.get(surface_name, 0.0)
+                )
             
             # 熱入力記録を追加
             self.heat_input_records.append(HeatInputRecord(
                 time=time,
                 surface_name=surface_name,
                 solar_heat=solar_heat,
-                albedo_heat=albedo_heat,
-                earth_ir_heat=earth_ir_heat,
-                interpanel_radiation=interpanel_radiation[surface_name],
-                total_heat=surface_total_heat,
+                albedo_heat=albedo_heat if enable_albedo else 0.0,
+                earth_ir_heat=earth_ir_heat if enable_earth_ir else 0.0,
+                interpanel_radiation=interpanel_radiation.get(surface_name, 0.0),
+                total_heat=heat_balances[surface_name],
                 temperature=self.temperatures[surface_name]
             ))
+        
+        # パネル間輻射の計算と加算
+        for surface_name, heat in interpanel_radiation.items():
+            heat_balances[surface_name] += heat
         
         return heat_balances
 
     def update_temperature(self, heat_balances: Dict[str, float], time_step: float) -> Dict[str, float]:
-        """
-        各面の温度を更新
-        
-        Args:
-            heat_balances: 各面の熱収支 [W]（キー：面の名前）
-            time_step: 時間ステップ [秒]
-        
-        Returns:
-            temperature_changes: 各面の温度変化量 [K]（キー：面の名前）
-        """
+        """各面の温度を更新"""
         temperature_changes = {}
         for surface_name, heat_balance in heat_balances.items():
+            surface = self.surfaces[surface_name]
             total_heat_capacity = self.calculate_total_heat_capacity(surface_name)
-            temperature_change = heat_balance * time_step / total_heat_capacity
-            self.temperatures[surface_name] += temperature_change
-            temperature_changes[surface_name] = temperature_change
+            
+            if surface.has_mli:
+                # MLIノードの温度更新
+                # MLIの熱容量を適切な値に設定（面積に比例）
+                mli_heat_capacity = 1  # 0.1 J/K/m^2
+                mli_temp_change = (surface.mli_node.heat_input - surface.mli_node.heat_output) * time_step / mli_heat_capacity
+                # 温度変化が大きすぎる場合は制限
+                max_temp_change = 10.0  # 最大温度変化 [K/step]
+                mli_temp_change = np.clip(mli_temp_change, -max_temp_change, max_temp_change)
+                surface.mli_node.temperature += mli_temp_change
+            
+            # 面の温度更新
+            temp_change = heat_balance * time_step / total_heat_capacity
+            self.temperatures[surface_name] += temp_change
+            temperature_changes[surface_name] = temp_change
         return temperature_changes
 
     def get_temperature(self, surface_name: str) -> float:
@@ -417,8 +495,22 @@ class ThermalNode:
         return self.temperatures[surface_name]
 
     def get_all_temperatures(self) -> Dict[str, float]:
-        """全面の温度を取得"""
-        return self.temperatures.copy()
+        """全面の温度を取得（MLIノードの温度も含む）"""
+        temps = self.temperatures.copy()
+        # MLIノードの温度も追加
+        for surface_name, surface in self.surfaces.items():
+            if surface.has_mli:
+                temps[f"{surface_name}_MLI"] = surface.mli_node.temperature
+        return temps
+
+    def get_mli_temperature(self, surface_name: str) -> Optional[float]:
+        """特定の面のMLIノードの温度を取得（MLIがない場合はNone）"""
+        if surface_name not in self.surfaces:
+            raise ValueError(f"面 {surface_name} は存在しません")
+        surface = self.surfaces[surface_name]
+        if surface.has_mli:
+            return surface.mli_node.temperature
+        return None
 
     def save_rij_matrix(self, output_dir: str, filename: str = 'rij_matrix.csv'):
         """
@@ -496,6 +588,8 @@ def calculate_radiative_conductance_matrix(surfaces: Dict[str, Surface], dimensi
     6面+宇宙ノードの7x7 Rij（放射伝達行列）を作成する。
     面ノード間のRijは「面積 x i面放射率 x Fij」で計算。
     面ノードと宇宙ノード間のRijも計算。
+    MLIがついている面の場合、宇宙との輻射熱交換はMLIノードが行うため、
+    その面の宇宙ノードとのRijは0とする。
     Rijは対称行列ではない（一般に非対称）、対角成分は0。
     宇宙ノードは最後（index=6）とする。
     Returns:
@@ -528,13 +622,20 @@ def calculate_radiative_conductance_matrix(surfaces: Dict[str, Surface], dimensi
                 continue
             Rij[i, j] = A[i] * epsilon_inside[i] * F[i, j]
 
-    # --- 面-宇宙ノード間Rij（既存ロジック） ---
+    # --- 面-宇宙ノード間Rij（MLIの有無を考慮） ---
     for i, name in enumerate(surface_names):
         surface = surfaces[name]
-        epsilon_out = sum(opt.epsilon * ratio for opt, ratio in surface.optical_properties.outside)
-        area = surface.area
-        value = epsilon_out * area
-        Rij[i, n] = value
-        Rij[n, i] = value
+        if not surface.has_mli:
+            # MLIがない面のみ宇宙との輻射熱交換を計算
+            epsilon_out = sum(opt.epsilon * ratio for opt, ratio in surface.optical_properties.outside)
+            area = surface.area
+            value = epsilon_out * area
+            Rij[i, n] = value
+            Rij[n, i] = value
+        else:
+            # MLIがついている面は宇宙との輻射熱交換を0に
+            Rij[i, n] = 0.0
+            Rij[n, i] = 0.0
+
     # 対角成分は0（初期値のまま）
     return Rij, node_names 
