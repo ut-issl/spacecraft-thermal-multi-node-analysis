@@ -28,11 +28,18 @@ class Surface:
     area: float  # m^2
     panel: PanelProperties  # パネルの熱物性
     optical_properties: SurfaceOpticalProperties  # 表面光学特性
+    initial_temp: float = None  # 初期温度 [K]
     has_mli: bool = False  # MLIが装着されているかどうか
     mli_node: Optional[MLINode] = None  # MLIノード（MLI装着時のみ使用）
 
     def __post_init__(self):
         """MLIの有無を判定し、MLIノードを初期化"""
+        # 初期温度が設定されていない場合は設定ファイルから読み込む
+        if self.initial_temp is None:
+            constants = load_constants()
+            # 設定ファイルにinitial_temperatureがない場合は293.15K（20℃）をデフォルト値として使用
+            self.initial_temp = constants.get('initial_temperature', 293.15)
+            
         # 外側の表面材にMLIが含まれているかチェック
         for optical_props, _ in self.optical_properties.outside:
             if optical_props.name == "MLI":
@@ -47,7 +54,7 @@ class Surface:
                     surface_name=self.name,
                     emissivity=optical_props.epsilon,  # 外側カバーフィルムの放射率
                     effective_emissivity=optical_props.effective_emissivity,  # 実効放射率
-                    temperature=self.panel.material.specific_heat,  # 初期温度は面と同じ
+                    temperature=self.initial_temp,  # 初期温度は面と同じ
                     area=self.area,
                     heat_input=0.0,
                     heat_output=0.0
