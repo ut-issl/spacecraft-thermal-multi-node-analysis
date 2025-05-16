@@ -15,9 +15,13 @@ plt.rcParams['axes.unicode_minus'] = False  # マイナス記号の文字化け�
 def plot_temperature_profile(times: List[float], temperatures: Dict[str, List[float]], output_dir: str, eclipse_flags: Optional[List[bool]] = None):
     """Plot and save temperature history
     eclipse_flags: 各時刻で蝕中かどうかのリスト（Trueならグレー背景）
+    MLIノードの温度はグラフには表示しない
     """
     plt.figure(figsize=(10, 6))
     for surface_name, temp_history in temperatures.items():
+        # MLIノードの温度はスキップ
+        if surface_name.endswith('_MLI'):
+            continue
         # Convert Kelvin to Celsius
         temp_celsius = [temp - 273.15 for temp in temp_history]
         plt.plot(times, temp_celsius, label=surface_name)
