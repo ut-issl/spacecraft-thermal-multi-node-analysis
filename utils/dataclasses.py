@@ -18,6 +18,7 @@ class SurfaceMaterial:
     alpha: float  # 太陽吸収率
     epsilon: float  # 放射率
     description: str
+    effective_emissivity: float = None  # MLIの場合の実効放射率（オプション）
 
 @dataclass
 class HeatInputRecord:
@@ -29,4 +30,15 @@ class HeatInputRecord:
     earth_ir_heat: float  # 地球赤外熱 [W]
     interpanel_radiation: float  # パネル間輻射による熱収支 [W]
     total_heat: float  # 合計熱量 [W]
-    temperature: float  # 面の温度 [K] 
+    temperature: float  # 面の温度 [K]
+
+@dataclass
+class MLINode:
+    """MLIノード（算術ノード）"""
+    surface_name: str
+    emissivity: float  # MLIの外側カバーフィルムの放射率
+    effective_emissivity: float  # MLIと内部構造との間の実効放射率
+    temperature: float  # 温度 [K]
+    area: float  # 面積 [m^2]
+    heat_input: float  # 熱入力 [W]
+    heat_output: float  # 熱出力 [W] 
