@@ -83,7 +83,7 @@ def save_temperature_data(times: List[float], temperatures: Dict[str, List[float
     os.makedirs(output_dir, exist_ok=True)
     
     # Create dataframe
-    data = {'Time [hours]': np.array(times) / 3600}
+    data = {'Time [s]': np.array(times)}
     for surface_name, temp_history in temperatures.items():
         # Convert Kelvin to Celsius
         temp_celsius = [temp - 273.15 for temp in temp_history]
