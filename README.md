@@ -26,6 +26,50 @@ uv sync
 
 ## 使い方
 
+### 一括解析実行機能
+
+複数の解析条件を一括実行するには、`batch_analysis.py`を使用します。
+
+1. 解析設定のテンプレートファイルを作成：
+```bash
+python batch_analysis.py create-template
+```
+
+2. 作成された`analysis_config_template.csv`を編集して、実行したい解析条件を記述：
+```csv
+mode,altitude,beta,sun_x,sun_y,sun_z,duration,num_orbits,temp_grid_interval,output_dir
+earth,500.0,60.0,,,40010.0,,5.0,output/earth_orbit_alt500.0_beta60.0
+earth,300.0,45.0,,,40010.0,,5.0,output/earth_orbit_alt300.0_beta45.0
+deep_space,,,,1.0,0.0,0.0,40010.0,,5.0,output/deep_space_sun_x1.0_y0.0_z0.0
+```
+
+3. 設定ファイルを使って一括解析を実行：
+```bash
+python batch_analysis.py batch analysis_config_template.csv
+```
+
+#### 設定ファイルの項目
+- `mode`: 解析モード（'earth' または 'deep_space'）
+- `altitude`: 軌道高度 [km]（地球周回軌道の場合のみ）
+- `beta`: ベータ角 [度]（地球周回軌道の場合のみ）
+- `sun_x`, `sun_y`, `sun_z`: 太陽方向ベクトル（深宇宙の場合のみ）
+- `duration`: 解析時間 [秒]
+- `num_orbits`: 周回数（指定時はdurationより優先）
+- `temp_grid_interval`: 温度データの出力間隔 [秒]
+- `output_dir`: 出力ディレクトリ
+
+#### ログファイル
+- ファイル名：`analysis_log.log`
+- 内容：
+  - 解析実行時刻
+  - 各解析の設定パラメータ
+  - 実行状態（成功/エラー）
+  - エラーが発生した場合はエラーメッセージ
+- 特徴：
+  - 追記モードで記録（既存のログを保持）
+  - 解析を実行するたびに新しい結果が追加
+  - 時系列での解析実行履歴を追跡可能
+
 ### 地球周回軌道の非定常解析
 
 ```bash
