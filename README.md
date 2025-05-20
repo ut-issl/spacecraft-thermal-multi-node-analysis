@@ -26,6 +26,50 @@ uv sync
 
 ## 使い方
 
+### 一括解析実行機能
+
+複数の解析条件を一括実行するには、`batch_analysis.py`を使用します。
+
+1. 解析設定のテンプレートファイルを作成：
+```bash
+python batch_analysis.py create-template
+```
+
+2. 作成された`analysis_config_template.csv`を編集して、実行したい解析条件を記述：
+```csv
+mode,altitude,beta,sun_x,sun_y,sun_z,duration,num_orbits,temp_grid_interval,output_dir
+earth,500.0,60.0,,,40010.0,,5.0,output/earth_orbit_alt500.0_beta60.0
+earth,300.0,45.0,,,40010.0,,5.0,output/earth_orbit_alt300.0_beta45.0
+deep_space,,,,1.0,0.0,0.0,40010.0,,5.0,output/deep_space_sun_x1.0_y0.0_z0.0
+```
+
+3. 設定ファイルを使って一括解析を実行：
+```bash
+python batch_analysis.py batch analysis_config_template.csv
+```
+
+#### 設定ファイルの項目
+- `mode`: 解析モード（'earth' または 'deep_space'）
+- `altitude`: 軌道高度 [km]（地球周回軌道の場合のみ）
+- `beta`: ベータ角 [度]（地球周回軌道の場合のみ）
+- `sun_x`, `sun_y`, `sun_z`: 太陽方向ベクトル（深宇宙の場合のみ）
+- `duration`: 解析時間 [秒]
+- `num_orbits`: 周回数（指定時はdurationより優先）
+- `temp_grid_interval`: 温度データの出力間隔 [秒]
+- `output_dir`: 出力ディレクトリ
+
+#### ログファイル
+- ファイル名：`analysis_log.log`
+- 内容：
+  - 解析実行時刻
+  - 各解析の設定パラメータ
+  - 実行状態（成功/エラー）
+  - エラーが発生した場合はエラーメッセージ
+- 特徴：
+  - 追記モードで記録（既存のログを保持）
+  - 解析を実行するたびに新しい結果が追加
+  - 時系列での解析実行履歴を追跡可能
+
 ### 地球周回軌道の非定常解析
 
 ```bash
@@ -55,6 +99,10 @@ python multi-node_analysis.py --mode deep_space --sun_x 1 --sun_y 0 --sun_z 0 --
 - `heat_balance.png`：熱収支グラフ
 - `heat_input_by_surface.png`：面ごとの熱入力グラフ
 - `orbit_visualization.png`：軌道3D可視化（地球周回のみ）
+- `settings/`：解析に使用した設定ファイルのコピー
+  - `constants.yaml`：物理定数、衛星寸法、内部発熱、軌道・解析パラメータ
+  - `surface_properties.yaml`：各面の表面材・割合・光学特性
+  - `material_properties.yaml`：材料の熱物性値・パネル材料構成
 
 ## 設定ファイル
 
@@ -72,3 +120,90 @@ python multi-node_analysis.py --mode deep_space --sun_x 1 --sun_y 0 --sun_z 0 --
 - 地球赤外・アルベドのビューファクターは球体モデル・Banister近似等を用いて厳密に計算
 - 面間輻射はRij法で厳密に計算
 - 姿勢・軌道パラメータは設定ファイルまたはコマンドラインで柔軟に指定可能
+
+## 温度データ比較機能
+
+`compare_temperature_data.py`を使用して、異なる解析結果間の温度データを比較できます。
+想定は、ThermalDesktopのWrite Results Data to Text機能で出力したCSVと、本プログラムの出力データの比較です。
+
+### 単一の比較を実行
+
+```bash
+python compare_temperature_data.py single <comparison/td/のCSVファイル> <output/配下のtemperature_data.csvファイル>
+```
+
+例：
+```bash
+python compare_temperature_data.py single comparison/td/test.csv output/earth_orbit_alt500.0_beta60.0/temperature_data.csv
+```
+
+### 複数の比較を一括実行
+
+1. 比較設定のテンプレートファイルを作成：
+```bash
+python compare_temperature_data.py create-template
+```
+
+2. 作成された`comparison_config_template.csv`を編集して、比較したいファイルの組み合わせを記述：
+```csv
+td_file,output_file
+comparison/td/test1.csv,output/earth_orbit_alt500.0_beta60.0/temperature_data.csv
+comparison/td/test2.csv,output/earth_orbit_alt300.0_beta45.0/temperature_data.csv
+comparison/td/test3.csv,output/earth_orbit_alt700.0_beta75.0/temperature_data.csv
+```
+
+3. 設定ファイルを使って一括比較を実行：
+```bash
+python compare_temperature_data.py batch comparison_config_template.csv
+```
+
+### 出力ファイル
+
+比較結果は`comparison/`ディレクトリに以下の形式で保存されます：
+
+1. 差分データCSVファイル
+- ファイル名：`diff_<tdファイル名>_vs_<outputフォルダ名>.csv`
+- 内容：
+  - `Time [s]`: 時間
+  - `PX [°C]_diff`: PXノードの温度差分
+  - `MX [°C]_diff`: MXノードの温度差分
+  - `PY [°C]_diff`: PYノードの温度差分
+  - `MY [°C]_diff`: MYノードの温度差分
+  - `PZ [°C]_diff`: PZノードの温度差分
+  - `MZ [°C]_diff`: MZノードの温度差分
+  - `MY_MLI [°C]_diff`: MY_MLIノードの温度差分
+
+2. RMSEログファイル
+- ファイル名：`comparison/comparison_rmse.log`
+- 内容：
+  - 比較実行時刻
+  - 比較元ファイルと比較先ファイルのパス
+  - 各ノードの時間平均RMSE（二乗平均平方根誤差）
+- 特徴：
+  - 追記モードで記録（既存のログを保持）
+  - 比較を実行するたびに新しい結果が追加
+  - 時系列での比較結果の推移を追跡可能
+
+ログファイルの例：
+```
+=== 比較実行時刻: 2024-03-21 15:30:45 ===
+比較元: comparison/td/test.csv
+比較先: output/earth_orbit_alt500.0_beta60.0/temperature_data.csv
+各ノードの時間平均RMSE [°C]:
+  PX [°C]: 1.234567
+  MX [°C]: 2.345678
+  PY [°C]: 1.876543
+  MY [°C]: 2.123456
+  PZ [°C]: 1.987654
+  MZ [°C]: 2.234567
+  MY_MLI [°C]: 1.765432
+--------------------------------------------------
+```
+
+### オプション
+
+- `--output-dir`: 出力先ディレクトリを指定（デフォルト: `comparison`）
+```bash
+python compare_temperature_data.py single <td_file> <output_file> --output-dir custom_output
+python compare_temperature_data.py batch <config_file> --output-dir custom_output
+```

@@ -2,6 +2,8 @@
 import numpy as np
 import os
 import argparse
+import shutil
+from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 from utils.thermal_utils import (
     ThermalNode, Surface, PanelProperties, SurfaceOpticalProperties,
@@ -240,6 +242,27 @@ def run_deep_space_analysis(config: SatelliteConfiguration,
 
     return times.tolist(), temperatures, node.heat_input_records, eclipse_flags
 
+def copy_settings_files(output_dir: str):
+    """
+    設定ファイルを結果出力フォルダにコピーする関数
+    
+    Args:
+        output_dir (str): 出力ディレクトリのパス
+    """
+    settings_dir = 'settings'
+    settings_output_dir = os.path.join(output_dir, 'settings')
+    
+    # 出力ディレクトリ内にsettingsディレクトリを作成
+    os.makedirs(settings_output_dir, exist_ok=True)
+    
+    # settings/配下の全てのファイルをコピー
+    for file in os.listdir(settings_dir):
+        if file.endswith(('.yaml', '.yml')):
+            src_path = os.path.join(settings_dir, file)
+            dst_path = os.path.join(settings_output_dir, file)
+            shutil.copy2(src_path, dst_path)
+            print(f'設定ファイルをコピーしました: {dst_path}')
+
 def main():
     # コマンドライン引数の解析
     parser = argparse.ArgumentParser(description='衛星の熱解析プログラム')
@@ -280,6 +303,8 @@ def main():
         output_subdir = f"earth_orbit_alt{altitude:.1f}_beta{beta_angle:.1f}"
         output_path = os.path.join(args.output_dir, output_subdir)
         os.makedirs(output_path, exist_ok=True)
+        # 設定ファイルのコピー
+        copy_settings_files(output_path)
         
         times, temperatures, heat_input_records, eclipse_flags = run_earth_orbit_analysis(
             config=config,
@@ -320,6 +345,8 @@ def main():
         sun_dir = f"deep_space_sun_{sun_vector_normalized[0]:.3f}_{sun_vector_normalized[1]:.3f}_{sun_vector_normalized[2]:.3f}"
         output_path = os.path.join(args.output_dir, sun_dir)
         os.makedirs(output_path, exist_ok=True)
+        # 設定ファイルのコピー
+        copy_settings_files(output_path)
         
         if args.duration is not None:
             duration = args.duration
