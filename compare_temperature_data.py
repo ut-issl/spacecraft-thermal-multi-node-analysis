@@ -2,8 +2,9 @@ import pandas as pd
 import os
 import argparse
 from pathlib import Path
+from typing import List, Dict, Tuple
 
-def compare_temperature_data(td_file, output_file, output_dir='comparison'):
+def compare_temperature_data(td_file: str, output_file: str, output_dir: str = 'comparison') -> str:
     """
     温度データを比較し、差分を計算してCSVファイルに出力する関数
     
@@ -11,6 +12,9 @@ def compare_temperature_data(td_file, output_file, output_dir='comparison'):
         td_file (str): comparison/td/配下のCSVファイルパス
         output_file (str): output/配下の解析結果フォルダ内のtemperature_data.csvファイルパス
         output_dir (str): 出力先ディレクトリ
+    
+    Returns:
+        str: 出力ファイルのパス
     """
     # 入力ファイルの読み込み
     td_df = pd.read_csv(td_file)
@@ -52,15 +56,103 @@ def compare_temperature_data(td_file, output_file, output_dir='comparison'):
     # 差分データの保存
     diff_df.to_csv(output_path, index=False)
     print(f'差分データを保存しました: {output_path}')
+    
+    return output_path
+
+def load_comparison_config(config_file: str) -> List[Dict[str, str]]:
+    """
+    比較設定を読み込む関数
+    
+    Args:
+        config_file (str): 比較設定CSVファイルのパス
+    
+    Returns:
+        List[Dict[str, str]]: 比較設定のリスト
+    """
+    config_df = pd.read_csv(config_file)
+    required_columns = ['td_file', 'output_file']
+    
+    # 必須カラムの存在確認
+    if not all(col in config_df.columns for col in required_columns):
+        raise ValueError(f'設定ファイルには以下のカラムが必要です: {required_columns}')
+    
+    # 設定を辞書のリストに変換
+    configs = config_df.to_dict('records')
+    return configs
+
+def batch_compare(config_file: str, output_dir: str = 'comparison') -> List[str]:
+    """
+    複数の比較を一括実行する関数
+    
+    Args:
+        config_file (str): 比較設定CSVファイルのパス
+        output_dir (str): 出力先ディレクトリ
+    
+    Returns:
+        List[str]: 出力ファイルのパスのリスト
+    """
+    # 設定の読み込み
+    configs = load_comparison_config(config_file)
+    
+    # 各設定に対して比較を実行
+    output_paths = []
+    for config in configs:
+        try:
+            output_path = compare_temperature_data(
+                config['td_file'],
+                config['output_file'],
+                output_dir
+            )
+            output_paths.append(output_path)
+        except Exception as e:
+            print(f'エラー: {config["td_file"]} と {config["output_file"]} の比較中にエラーが発生しました: {str(e)}')
+    
+    return output_paths
+
+def create_config_template(output_file: str = 'comparison_config_template.csv'):
+    """
+    比較設定のテンプレートファイルを作成する関数
+    
+    Args:
+        output_file (str): 出力ファイルのパス
+    """
+    template_df = pd.DataFrame({
+        'td_file': ['comparison/td/example.csv'],
+        'output_file': ['output/example/temperature_data.csv']
+    })
+    template_df.to_csv(output_file, index=False)
+    print(f'設定テンプレートを作成しました: {output_file}')
 
 def main():
     parser = argparse.ArgumentParser(description='温度データを比較し、差分を計算してCSVファイルに出力します。')
-    parser.add_argument('td_file', help='comparison/td/配下のCSVファイルパス')
-    parser.add_argument('output_file', help='output/配下の解析結果フォルダ内のtemperature_data.csvファイルパス')
-    parser.add_argument('--output-dir', default='comparison', help='出力先ディレクトリ（デフォルト: comparison）')
+    subparsers = parser.add_subparsers(dest='command', help='実行するコマンド')
+    
+    # 単一の比較を実行するコマンド
+    single_parser = subparsers.add_parser('single', help='単一の比較を実行')
+    single_parser.add_argument('td_file', help='comparison/td/配下のCSVファイルパス')
+    single_parser.add_argument('output_file', help='output/配下の解析結果フォルダ内のtemperature_data.csvファイルパス')
+    single_parser.add_argument('--output-dir', default='comparison', help='出力先ディレクトリ（デフォルト: comparison）')
+    
+    # 複数の比較を一括実行するコマンド
+    batch_parser = subparsers.add_parser('batch', help='複数の比較を一括実行')
+    batch_parser.add_argument('config_file', help='比較設定CSVファイルのパス')
+    batch_parser.add_argument('--output-dir', default='comparison', help='出力先ディレクトリ（デフォルト: comparison）')
+    
+    # 設定テンプレートを作成するコマンド
+    template_parser = subparsers.add_parser('create-template', help='比較設定のテンプレートファイルを作成')
+    template_parser.add_argument('--output-file', default='comparison_config_template.csv',
+                               help='出力ファイルのパス（デフォルト: comparison_config_template.csv）')
     
     args = parser.parse_args()
-    compare_temperature_data(args.td_file, args.output_file, args.output_dir)
+    
+    if args.command == 'single':
+        compare_temperature_data(args.td_file, args.output_file, args.output_dir)
+    elif args.command == 'batch':
+        batch_compare(args.config_file, args.output_dir)
+    elif args.command == 'create-template':
+        create_config_template(args.output_file)
+    else:
+        parser.print_help()
 
 if __name__ == '__main__':
     main() 
