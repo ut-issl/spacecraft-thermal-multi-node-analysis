@@ -99,6 +99,10 @@ python multi-node_analysis.py --mode deep_space --sun_x 1 --sun_y 0 --sun_z 0 --
 - `heat_balance.png`：熱収支グラフ
 - `heat_input_by_surface.png`：面ごとの熱入力グラフ
 - `orbit_visualization.png`：軌道3D可視化（地球周回のみ）
+- `settings/`：解析に使用した設定ファイルのコピー
+  - `constants.yaml`：物理定数、衛星寸法、内部発熱、軌道・解析パラメータ
+  - `surface_properties.yaml`：各面の表面材・割合・光学特性
+  - `material_properties.yaml`：材料の熱物性値・パネル材料構成
 
 ## 設定ファイル
 
