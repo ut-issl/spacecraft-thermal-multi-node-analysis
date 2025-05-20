@@ -183,29 +183,29 @@ class ViewFactorMatrix:
 
         # 面i, 面jの組み合わせごとにw, h, lを割り当て
         if abs(ni[0]) == 1 and abs(nj[1]) == 1:  # X面とY面
-            w = Lz
-            h = Ly
-            l = Lx
+            w = Ly
+            h = Lx
+            l = Lz
         elif abs(ni[0]) == 1 and abs(nj[2]) == 1:  # X面とZ面
-            w = Ly
-            h = Lz
-            l = Lx
-        elif abs(ni[1]) == 1 and abs(nj[0]) == 1:  # Y面とX面
             w = Lz
             h = Lx
             l = Ly
-        elif abs(ni[1]) == 1 and abs(nj[2]) == 1:  # Y面とZ面
-            w = Lx
-            h = Lz
-            l = Ly
-        elif abs(ni[2]) == 1 and abs(nj[0]) == 1:  # Z面とX面
-            w = Ly
-            h = Lx
-            l = Lz
-        elif abs(ni[2]) == 1 and abs(nj[1]) == 1:  # Z面とY面
+        elif abs(ni[1]) == 1 and abs(nj[0]) == 1:  # Y面とX面
             w = Lx
             h = Ly
             l = Lz
+        elif abs(ni[1]) == 1 and abs(nj[2]) == 1:  # Y面とZ面
+            w = Lz
+            h = Ly
+            l = Lx
+        elif abs(ni[2]) == 1 and abs(nj[0]) == 1:  # Z面とX面
+            w = Lx
+            h = Lz
+            l = Ly
+        elif abs(ni[2]) == 1 and abs(nj[1]) == 1:  # Z面とY面
+            w = Ly
+            h = Lz
+            l = Lx
         else:
             return 0.0
 
