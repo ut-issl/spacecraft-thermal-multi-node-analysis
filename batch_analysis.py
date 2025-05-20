@@ -18,9 +18,9 @@ def create_analysis_config_template(output_file: str = 'analysis_config_template
         'mode': ['earth'],  # earth または deep_space
         'altitude': [500.0],  # 地球周回軌道の場合のみ使用 [km]
         'beta': [60.0],  # 地球周回軌道の場合のみ使用 [度]
-        'sun_x': [1.0],  # 深宇宙の場合のみ使用
-        'sun_y': [0.0],  # 深宇宙の場合のみ使用
-        'sun_z': [0.0],  # 深宇宙の場合のみ使用
+        'sun_x': [None],  # 深宇宙の場合のみ使用
+        'sun_y': [None],  # 深宇宙の場合のみ使用
+        'sun_z': [None],  # 深宇宙の場合のみ使用
         'duration': [40010.0],  # 解析時間 [秒]
         'num_orbits': [None],  # 周回数（指定時はdurationより優先）
         'temp_grid_interval': [5.0],  # 温度データの出力間隔 [秒]
