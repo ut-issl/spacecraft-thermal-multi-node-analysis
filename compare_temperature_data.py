@@ -3,6 +3,49 @@ import os
 import argparse
 from pathlib import Path
 from typing import List, Dict, Tuple
+import numpy as np
+from datetime import datetime
+
+def calculate_rmse(diff_df: pd.DataFrame) -> Dict[str, float]:
+    """
+    各ノードの時間平均RMSEを計算する関数
+    
+    Args:
+        diff_df (pd.DataFrame): 差分データのDataFrame
+    
+    Returns:
+        Dict[str, float]: 各ノードのRMSE
+    """
+    rmse_dict = {}
+    for col in diff_df.columns:
+        if col.endswith('_diff'):
+            # RMSE = sqrt(mean(squared_diff))
+            rmse = np.sqrt(np.mean(diff_df[col] ** 2))
+            rmse_dict[col.replace('_diff', '')] = rmse
+    return rmse_dict
+
+def write_rmse_log(log_file: str, td_file: str, output_file: str, rmse_dict: Dict[str, float]):
+    """
+    RMSEの結果をログファイルに記録する関数
+    
+    Args:
+        log_file (str): ログファイルのパス
+        td_file (str): 比較元ファイルのパス
+        output_file (str): 比較先ファイルのパス
+        rmse_dict (Dict[str, float]): 各ノードのRMSE
+    """
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    log_dir = os.path.dirname(log_file)
+    os.makedirs(log_dir, exist_ok=True)
+    
+    with open(log_file, 'a', encoding='utf-8') as f:
+        f.write(f'\n=== 比較実行時刻: {timestamp} ===\n')
+        f.write(f'比較元: {td_file}\n')
+        f.write(f'比較先: {output_file}\n')
+        f.write('各ノードの時間平均RMSE [°C]:\n')
+        for node, rmse in rmse_dict.items():
+            f.write(f'  {node}: {rmse:.6f}\n')
+        f.write('-' * 50 + '\n')
 
 def compare_temperature_data(td_file: str, output_file: str, output_dir: str = 'comparison') -> str:
     """
@@ -56,6 +99,12 @@ def compare_temperature_data(td_file: str, output_file: str, output_dir: str = '
     # 差分データの保存
     diff_df.to_csv(output_path, index=False)
     print(f'差分データを保存しました: {output_path}')
+    
+    # RMSEの計算とログ記録
+    rmse_dict = calculate_rmse(diff_df)
+    log_file = os.path.join(output_dir, 'comparison_rmse.log')
+    write_rmse_log(log_file, td_file, output_file, rmse_dict)
+    print(f'RMSEの結果をログに記録しました: {log_file}')
     
     return output_path
 
