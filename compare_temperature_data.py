@@ -166,7 +166,7 @@ def create_config_template(output_file: str = 'comparison_config_template.csv'):
         output_file (str): 出力ファイルのパス
     """
     template_df = pd.DataFrame({
-        'td_file': ['comparison/td/example.csv'],
+        'td_file': ['comparison/test/example.csv'],
         'output_file': ['output/example/temperature_data.csv']
     })
     template_df.to_csv(output_file, index=False)
