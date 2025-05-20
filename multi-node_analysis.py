@@ -312,11 +312,12 @@ def main():
         if not all(v is not None for v in [args.sun_x, args.sun_y, args.sun_z]):
             parser.error("深宇宙モードでは --sun_x, --sun_y, --sun_z の全てを指定してください")
         
+        # 太陽方向ベクトルを正規化
         sun_vector = np.array([args.sun_x, args.sun_y, args.sun_z])
-        sun_vector = sun_vector / np.linalg.norm(sun_vector)  # 正規化
+        sun_vector_normalized = sun_vector / np.linalg.norm(sun_vector)  # 正規化
         
-        # 出力ディレクトリの作成（太陽方向ベクトルを含む）
-        sun_dir = f"deep_space_sun_{args.sun_x:.2f}_{args.sun_y:.2f}_{args.sun_z:.2f}"
+        # 出力ディレクトリの作成（正規化した太陽方向ベクトルを使用）
+        sun_dir = f"deep_space_sun_{sun_vector_normalized[0]:.3f}_{sun_vector_normalized[1]:.3f}_{sun_vector_normalized[2]:.3f}"
         output_path = os.path.join(args.output_dir, sun_dir)
         os.makedirs(output_path, exist_ok=True)
         
@@ -326,7 +327,7 @@ def main():
             duration = None
         times, temperatures, heat_input_records, eclipse_flags = run_deep_space_analysis(
             config=config,
-            sun_vector=sun_vector,
+            sun_vector=sun_vector_normalized,  # 正規化したベクトルを使用
             duration=duration
         )
         # ビューファクター行列（Rij）をCSV出力
