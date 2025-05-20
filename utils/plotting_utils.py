@@ -12,12 +12,31 @@ plt.rcParams['font.family'] = 'Arial'
 plt.rcParams['font.sans-serif'] = ['Arial']
 plt.rcParams['axes.unicode_minus'] = False  # マイナス記号の文字化け防止
 
-def plot_temperature_profile(times: List[float], temperatures: Dict[str, List[float]], output_dir: str, eclipse_flags: Optional[List[bool]] = None):
+def plot_temperature_profile(times: List[float], temperatures: Dict[str, List[float]], output_dir: str, eclipse_flags: Optional[List[bool]] = None, temp_grid_interval: float = 10.0):
     """Plot and save temperature history
     eclipse_flags: 各時刻で蝕中かどうかのリスト（Trueならグレー背景）
     MLIノードの温度はグラフには表示しない
+    temp_grid_interval: 等温線の間隔 [°C]
     """
     plt.figure(figsize=(10, 6))
+    
+    # 温度の範囲を取得（ケルビンから摂氏に変換）
+    all_temps = []
+    for surface_name, temp_history in temperatures.items():
+        # MLIノードの温度は除外
+        if not surface_name.endswith('_MLI'):
+            all_temps.extend([temp - 273.15 for temp in temp_history])
+    
+    if not all_temps:  # 温度データが空の場合のエラー処理
+        raise ValueError("有効な温度データが見つかりません。MLIノード以外の温度データが必要です。")
+    
+    min_temp = np.floor(min(all_temps) / temp_grid_interval) * temp_grid_interval
+    max_temp = np.ceil(max(all_temps) / temp_grid_interval) * temp_grid_interval
+    
+    # 等温線のグリッドを描画
+    plt.grid(True, which='major', axis='y', linestyle='-', alpha=0.3)
+    plt.yticks(np.arange(min_temp, max_temp + temp_grid_interval, temp_grid_interval))
+    
     for surface_name, temp_history in temperatures.items():
         # MLIノードの温度はスキップ
         if surface_name.endswith('_MLI'):
@@ -45,7 +64,6 @@ def plot_temperature_profile(times: List[float], temperatures: Dict[str, List[fl
     plt.xlabel('Time [s]')
     plt.ylabel('Temperature [°C]')
     plt.title('Temperature History of Satellite Surfaces')
-    plt.grid(True)
     plt.legend()
     
     # Save and close the plot
