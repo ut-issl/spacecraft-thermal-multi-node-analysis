@@ -72,3 +72,61 @@ python multi-node_analysis.py --mode deep_space --sun_x 1 --sun_y 0 --sun_z 0 --
 - 地球赤外・アルベドのビューファクターは球体モデル・Banister近似等を用いて厳密に計算
 - 面間輻射はRij法で厳密に計算
 - 姿勢・軌道パラメータは設定ファイルまたはコマンドラインで柔軟に指定可能
+
+## 温度データ比較機能
+
+`compare_temperature_data.py`を使用して、異なる解析結果間の温度データを比較できます。
+想定は、ThermalDesktopのWrite Results Data to Text機能で出力したCSVと、本プログラムの出力データの比較です。
+
+### 単一の比較を実行
+
+```bash
+python compare_temperature_data.py single <comparison/td/のCSVファイル> <output/配下のtemperature_data.csvファイル>
+```
+
+例：
+```bash
+python compare_temperature_data.py single comparison/td/test.csv output/earth_orbit_alt500.0_beta60.0/temperature_data.csv
+```
+
+### 複数の比較を一括実行
+
+1. 比較設定のテンプレートファイルを作成：
+```bash
+python compare_temperature_data.py create-template
+```
+
+2. 作成された`comparison_config_template.csv`を編集して、比較したいファイルの組み合わせを記述：
+```csv
+td_file,output_file
+comparison/td/test1.csv,output/earth_orbit_alt500.0_beta60.0/temperature_data.csv
+comparison/td/test2.csv,output/earth_orbit_alt300.0_beta45.0/temperature_data.csv
+comparison/td/test3.csv,output/earth_orbit_alt700.0_beta75.0/temperature_data.csv
+```
+
+3. 設定ファイルを使って一括比較を実行：
+```bash
+python compare_temperature_data.py batch comparison_config_template.csv
+```
+
+### 出力ファイル
+
+比較結果は`comparison/`ディレクトリに以下の形式で保存されます：
+- ファイル名：`diff_<tdファイル名>_vs_<outputフォルダ名>.csv`
+- 内容：
+  - `Time [s]`: 時間
+  - `PX [°C]_diff`: PXノードの温度差分
+  - `MX [°C]_diff`: MXノードの温度差分
+  - `PY [°C]_diff`: PYノードの温度差分
+  - `MY [°C]_diff`: MYノードの温度差分
+  - `PZ [°C]_diff`: PZノードの温度差分
+  - `MZ [°C]_diff`: MZノードの温度差分
+  - `MY_MLI [°C]_diff`: MY_MLIノードの温度差分
+
+### オプション
+
+- `--output-dir`: 出力先ディレクトリを指定（デフォルト: `comparison`）
+```bash
+python compare_temperature_data.py single <td_file> <output_file> --output-dir custom_output
+python compare_temperature_data.py batch <config_file> --output-dir custom_output
+```
