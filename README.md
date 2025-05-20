@@ -112,6 +112,8 @@ python compare_temperature_data.py batch comparison_config_template.csv
 ### 出力ファイル
 
 比較結果は`comparison/`ディレクトリに以下の形式で保存されます：
+
+1. 差分データCSVファイル
 - ファイル名：`diff_<tdファイル名>_vs_<outputフォルダ名>.csv`
 - 内容：
   - `Time [s]`: 時間
@@ -122,6 +124,33 @@ python compare_temperature_data.py batch comparison_config_template.csv
   - `PZ [°C]_diff`: PZノードの温度差分
   - `MZ [°C]_diff`: MZノードの温度差分
   - `MY_MLI [°C]_diff`: MY_MLIノードの温度差分
+
+2. RMSEログファイル
+- ファイル名：`comparison/comparison_rmse.log`
+- 内容：
+  - 比較実行時刻
+  - 比較元ファイルと比較先ファイルのパス
+  - 各ノードの時間平均RMSE（二乗平均平方根誤差）
+- 特徴：
+  - 追記モードで記録（既存のログを保持）
+  - 比較を実行するたびに新しい結果が追加
+  - 時系列での比較結果の推移を追跡可能
+
+ログファイルの例：
+```
+=== 比較実行時刻: 2024-03-21 15:30:45 ===
+比較元: comparison/td/test.csv
+比較先: output/earth_orbit_alt500.0_beta60.0/temperature_data.csv
+各ノードの時間平均RMSE [°C]:
+  PX [°C]: 1.234567
+  MX [°C]: 2.345678
+  PY [°C]: 1.876543
+  MY [°C]: 2.123456
+  PZ [°C]: 1.987654
+  MZ [°C]: 2.234567
+  MY_MLI [°C]: 1.765432
+--------------------------------------------------
+```
 
 ### オプション
 
