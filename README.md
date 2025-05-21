@@ -101,7 +101,14 @@ python multi-node_analysis.py --mode deep_space --sun_x 1 --sun_y 0 --sun_z 0 --
 - `heat_input_data.csv`：各面・各時刻の熱入力履歴
 - `view_factor_matrix.csv`：ビューファクター行列
 - `rij_matrix.csv`：放射伝達行列
-- `temperature_profile.png`：温度履歴グラフ
+- 温度プロファイルグラフ（3種類）：
+  - `temperature_panel.png`：パネル温度のみ（PX, MX, PY, MY, PZ, MZ）
+  - `temperature_components.png`：コンポーネント温度のみ
+  - `temperature_all.png`：全温度（パネルとコンポーネント）
+  - 特徴：
+    - パネルは固定の色で表示（視覚的に区別しやすい色を選択）
+    - コンポーネントはパネルと異なる色で自動的に割り当て
+    - 等温線の間隔はデフォルトで5°C
 - `heat_balance.png`：熱収支グラフ
 - `heat_input_by_surface.png`：面ごとの熱入力グラフ
 - `orbit_visualization.png`：軌道3D可視化（地球周回のみ）
@@ -109,6 +116,7 @@ python multi-node_analysis.py --mode deep_space --sun_x 1 --sun_y 0 --sun_z 0 --
   - `constants.yaml`：物理定数、衛星寸法、内部発熱、軌道・解析パラメータ
   - `surface_properties.yaml`：各面の表面材・割合・光学特性
   - `material_properties.yaml`：材料の熱物性値・パネル材料構成
+  - `component_properties.yaml`：コンポーネントの熱物性値・取り付け情報
   - `cij_matrix.csv`：コンダクタンス行列を定義するCSVファイル
 
 ## 設定ファイル
@@ -143,6 +151,31 @@ python multi-node_analysis.py --mode deep_space --sun_x 1 --sun_y 0 --sun_z 0 --
   - 対角成分は0（自身との熱伝導は考慮しない）
   - 対称行列である必要はない（方向性のある熱伝導を表現可能）
   - 値は正の実数（負の値は無効）
+
+### `settings/component_properties.yaml`
+- コンポーネントの熱物性値と取り付け情報を定義
+- 各コンポーネントの定義項目：
+  - `name`: コンポーネントの表示名
+  - `mass`: 質量 [kg]
+  - `specific_heat`: 比熱 [J/kg/K]
+  - `mounting`: 取り付け情報
+    - `panel`: 取り付け面（PX, MX, PY, MY, PZ, MZ）
+    - `thermal_conductance`: 締結部の熱コンダクタンス [W/K]
+- 例：
+  ```yaml
+  component_properties:
+    BAT:  # バッテリ
+      name: "Battery"
+      mass: 2.1  # 質量 [kg]
+      specific_heat: 700.0  # 比熱 [J/kg/K]
+      mounting:
+        panel: "MY"  # +Y面に取り付け
+        thermal_conductance: 1.0  # 締結部の熱コンダクタンス
+  ```
+- 注意：
+  - コンポーネントの追加は、このファイルに新しいエントリを追加するだけで可能
+  - 温度プロファイルグラフでは、コンポーネントは自動的に色分けされる
+  - 締結部の熱コンダクタンスが0の場合は、コンポーネントは取り付け面と熱的に絶縁
 
 ## 物理モデル・アルゴリズム
 - 地球赤外・アルベドのビューファクターは球体モデル・Banister近似等を用いて厳密に計算
