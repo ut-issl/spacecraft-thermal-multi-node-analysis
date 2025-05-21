@@ -25,6 +25,9 @@ def plot_temperature_profile(times: List[float], temperatures: Dict[str, List[fl
     for surface_name, temp_history in temperatures.items():
         # MLIノードの温度は除外
         if not surface_name.endswith('_MLI'):
+            # 温度履歴がリストでない場合はリストに変換
+            if not isinstance(temp_history, list):
+                temp_history = [temp_history]
             all_temps.extend([temp - 273.15 for temp in temp_history])
     
     if not all_temps:  # 温度データが空の場合のエラー処理
@@ -41,8 +44,14 @@ def plot_temperature_profile(times: List[float], temperatures: Dict[str, List[fl
         # MLIノードの温度はスキップ
         if surface_name.endswith('_MLI'):
             continue
+        # 温度履歴がリストでない場合はリストに変換
+        if not isinstance(temp_history, list):
+            temp_history = [temp_history]
         # Convert Kelvin to Celsius
         temp_celsius = [temp - 273.15 for temp in temp_history]
+        # 時間と温度の長さが一致することを確認
+        if len(times) != len(temp_celsius):
+            raise ValueError(f"時間と温度のデータ長が一致しません。surface_name: {surface_name}, times: {len(times)}, temperatures: {len(temp_celsius)}")
         plt.plot(times, temp_celsius, label=surface_name)
     
     # 蝕中の時間帯にグレー背景を描画

@@ -1,8 +1,11 @@
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 import pandas as pd
-from .dataclasses import SurfaceMaterial, MaterialProperties
-from .config_loader import load_constants, load_surface_properties, load_material_properties, load_panel_material_assignments, load_conductance_matrix
+from .dataclasses import SurfaceMaterial, MaterialProperties, ComponentProperties
+from .config_loader import (
+    load_constants, load_surface_properties, load_material_properties,
+    load_panel_material_assignments, load_conductance_matrix, load_component_properties
+)
 
 @dataclass
 class SatelliteConfiguration:
@@ -15,6 +18,7 @@ class SatelliteConfiguration:
     panel_material_assignments: Dict[str, List[Dict[str, float]]]  # パネルの材料構成（材料名と厚み）
     conductance_matrix: Optional[pd.DataFrame]  # パネル間の熱伝導率 [W/K]（Noneの場合は無効）
     enable_conductance: bool  # パネル間の熱伝導（Cij）を有効にするかどうか
+    components: Dict[str, ComponentProperties]  # コンポーネントの熱物性値
 
     @classmethod
     def from_config_files(cls) -> 'SatelliteConfiguration':
@@ -23,6 +27,7 @@ class SatelliteConfiguration:
         surface_materials, surface_optical_assignments = load_surface_properties()
         material_properties = load_material_properties()
         panel_material_assignments = load_panel_material_assignments()
+        components = load_component_properties()
         
         # コンダクタンス行列の有効/無効を取得
         enable_conductance = constants['analysis_parameters'].get('enable_conductance', False)
@@ -60,6 +65,11 @@ class SatelliteConfiguration:
                     if opt['material'] not in surface_materials:
                         raise ValueError(f"面 {surface_name} の{side}表面光学特性の材料 {opt['material']} が定義されていません")
         
+        # コンポーネントの設定を検証
+        for name, component in components.items():
+            if component.mounting_panel not in panel_material_assignments:
+                raise ValueError(f"コンポーネント {name} の取り付けパネル {component.mounting_panel} が存在しません")
+        
         return cls(
             dimensions=constants['satellite_dimensions'],
             internal_heat=constants['internal_heat'],  # 面ごとの内部発熱をそのまま使用
@@ -68,5 +78,6 @@ class SatelliteConfiguration:
             material_properties=material_properties,
             panel_material_assignments=panel_material_assignments,
             conductance_matrix=conductance_matrix,
-            enable_conductance=enable_conductance
+            enable_conductance=enable_conductance,
+            components=components
         ) 

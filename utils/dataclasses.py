@@ -46,11 +46,11 @@ class MLINode:
 
 @dataclass
 class ComponentProperties:
-    """コンポーネントの熱物性値"""
-    name: str
+    """コンポーネントの熱物性"""
+    name: str  # コンポーネント名
     mass: float  # 質量 [kg]
     specific_heat: float  # 比熱 [J/kg/K]
-    mounting_panel: str  # 取り付けパネル
+    mounting_panel: str  # 取り付けパネル名
     thermal_conductance: float  # 締結部の熱コンダクタンス [W/K]
 
     @property

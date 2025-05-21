@@ -2,7 +2,7 @@ import numpy as np
 from typing import Dict, List, Tuple, Optional
 import os
 from dataclasses import dataclass
-from .dataclasses import MaterialProperties, SurfaceMaterial, HeatInputRecord, MLINode
+from .dataclasses import MaterialProperties, SurfaceMaterial, HeatInputRecord, MLINode, ComponentProperties
 from .satellite_config import SatelliteConfiguration
 from .config_loader import load_constants, load_surface_properties, load_material_properties, load_panel_material_assignments
 import pandas as pd
@@ -309,13 +309,16 @@ class ThermalNode:
         self.temperatures: Dict[str, float] = {}
         self.heat_input_records: List[HeatInputRecord] = []
         self.internal_heat: Dict[str, float] = {}
-        self.view_factor_matrix: Optional[ViewFactorMatrix] = None  # ビューファクター行列
-        self.dimensions: Dict[str, float] = {}  # 衛星の寸法
-        self._rij_cache = None  # Rijキャッシュ
+        self.view_factor_matrix: Optional[ViewFactorMatrix] = None
+        self.dimensions: Dict[str, float] = {}
+        self._rij_cache = None
         self._rij_names = None
         self.initial_temp = initial_temp
-        self.conductance_matrix: Optional[pd.DataFrame] = None  # コンダクタンス行列
-        self.enable_conductance: bool = False  # コンダクタンスの有効/無効
+        self.conductance_matrix: Optional[pd.DataFrame] = None
+        self.enable_conductance: bool = False
+        # コンポーネント関連の属性を追加
+        self.components: Dict[str, ComponentProperties] = {}
+        self.component_temperatures: Dict[str, float] = {}
 
     def add_surface(self, surface: Surface):
         """面を追加し、初期温度を設定"""
@@ -482,6 +485,17 @@ class ThermalNode:
                     self.internal_heat.get(surface_name, 0.0)
                 )
             
+            # コンポーネントとの熱伝導を計算
+            component_heat = 0.0
+            for component in self.components.values():
+                if component.mounting_panel == surface_name:
+                    # コンポーネントとパネル間の熱伝導
+                    temp_diff = self.component_temperatures[component.name] - self.temperatures[surface_name]
+                    component_heat += component.thermal_conductance * temp_diff
+            
+            # コンポーネントとの熱伝導を熱収支に加算
+            heat_balances[surface_name] += component_heat
+            
             # 熱入力記録を追加
             self.heat_input_records.append(HeatInputRecord(
                 time=time,
@@ -502,29 +516,57 @@ class ThermalNode:
                 conductance_heat.get(surface_name, 0.0)
             )
         
+        # コンポーネントの熱収支を計算
+        component_heat_balances = {}
+        for component in self.components.values():
+            # コンポーネントとパネル間の熱伝導
+            panel_temp = self.temperatures[component.mounting_panel]
+            component_temp = self.component_temperatures[component.name]
+            temp_diff = panel_temp - component_temp
+            heat = component.thermal_conductance * temp_diff
+            component_heat_balances[component.name] = heat
+        
+        # コンポーネントの熱収支を追加
+        heat_balances.update(component_heat_balances)
+        
         return heat_balances
 
     def update_temperature(self, heat_balances: Dict[str, float], time_step: float) -> Dict[str, float]:
-        """各面の温度を更新"""
+        """各面とコンポーネントの温度を更新"""
         temperature_changes = {}
+        
+        # 面の温度更新（既存のコード）
         for surface_name, heat_balance in heat_balances.items():
-            surface = self.surfaces[surface_name]
-            total_heat_capacity = self.calculate_total_heat_capacity(surface_name)
-            
-            if surface.has_mli:
-                # MLIノードの温度更新
-                # MLIの熱容量を適切な値に設定（面積に比例）
-                mli_heat_capacity = 1  # 0.1 J/K/m^2
-                mli_temp_change = (surface.mli_node.heat_input - surface.mli_node.heat_output) * time_step / mli_heat_capacity
+            if surface_name in self.surfaces:
+                surface = self.surfaces[surface_name]
+                total_heat_capacity = self.calculate_total_heat_capacity(surface_name)
+                
+                if surface.has_mli:
+                    # MLIノードの温度更新（既存のコード）
+                    mli_heat_capacity = 1  # 0.1 J/K/m^2
+                    mli_temp_change = (surface.mli_node.heat_input - surface.mli_node.heat_output) * time_step / mli_heat_capacity
+                    # 温度変化が大きすぎる場合は制限
+                    max_temp_change = 100.0  # 最大温度変化 [K/step]
+                    mli_temp_change = np.clip(mli_temp_change, -max_temp_change, max_temp_change)
+                    surface.mli_node.temperature += mli_temp_change
+                
+                # 面の温度更新
+                temp_change = heat_balance * time_step / total_heat_capacity
+                self.temperatures[surface_name] += temp_change
+                temperature_changes[surface_name] = temp_change
+        
+        # コンポーネントの温度更新
+        for component_name, heat_balance in heat_balances.items():
+            if component_name in self.components:
+                component = self.components[component_name]
+                heat_capacity = component.heat_capacity
+                temp_change = heat_balance * time_step / heat_capacity
                 # 温度変化が大きすぎる場合は制限
-                max_temp_change = 10.0  # 最大温度変化 [K/step]
-                mli_temp_change = np.clip(mli_temp_change, -max_temp_change, max_temp_change)
-                surface.mli_node.temperature += mli_temp_change
-            
-            # 面の温度更新
-            temp_change = heat_balance * time_step / total_heat_capacity
-            self.temperatures[surface_name] += temp_change
-            temperature_changes[surface_name] = temp_change
+                max_temp_change = 100.0  # 最大温度変化 [K/step]
+                temp_change = np.clip(temp_change, -max_temp_change, max_temp_change)
+                self.component_temperatures[component_name] += temp_change
+                temperature_changes[component_name] = temp_change
+        
         return temperature_changes
 
     def get_temperature(self, surface_name: str) -> float:
@@ -561,6 +603,20 @@ class ThermalNode:
         df = pd.DataFrame(Rij, index=node_names, columns=node_names)
         os.makedirs(output_dir, exist_ok=True)
         df.to_csv(os.path.join(output_dir, filename))
+
+    def add_component(self, component: ComponentProperties):
+        """コンポーネントを追加し、初期温度を設定"""
+        if component.mounting_panel not in self.surfaces:
+            raise ValueError(f"コンポーネント {component.name} の取り付けパネル {component.mounting_panel} が存在しません")
+        self.components[component.name] = component
+        # コンポーネントの初期温度は取り付けパネルと同じ
+        self.component_temperatures[component.name] = self.temperatures[component.mounting_panel]
+
+    def get_component_temperature(self, component_name: str) -> float:
+        """特定のコンポーネントの温度を取得"""
+        if component_name not in self.component_temperatures:
+            raise ValueError(f"コンポーネント {component_name} は存在しません")
+        return self.component_temperatures[component_name]
 
 def create_satellite_surfaces(config: SatelliteConfiguration) -> List[Surface]:
     """衛星の各面を作成"""
