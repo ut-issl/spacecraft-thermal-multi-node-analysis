@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from typing import Dict, List
+import pandas as pd
 from .dataclasses import SurfaceMaterial, MaterialProperties
-from .config_loader import load_constants, load_surface_properties, load_material_properties, load_panel_material_assignments
+from .config_loader import load_constants, load_surface_properties, load_material_properties, load_panel_material_assignments, load_conductance_matrix
 
 @dataclass
 class SatelliteConfiguration:
@@ -12,6 +13,7 @@ class SatelliteConfiguration:
     surface_optical_assignments: Dict[str, Dict[str, List[Dict[str, float]]]]  # 面の表面光学特性割り当て（outside/inside）
     material_properties: Dict[str, MaterialProperties]  # 材料物性
     panel_material_assignments: Dict[str, List[Dict[str, float]]]  # パネルの材料構成（材料名と厚み）
+    conductance_matrix: pd.DataFrame  # パネル間の熱伝導率 [W/K]
 
     @classmethod
     def from_config_files(cls) -> 'SatelliteConfiguration':
@@ -20,6 +22,7 @@ class SatelliteConfiguration:
         surface_materials, surface_optical_assignments = load_surface_properties()
         material_properties = load_material_properties()
         panel_material_assignments = load_panel_material_assignments()
+        conductance_matrix = load_conductance_matrix()
         
         # 各面のパネル材料構成を検証
         for surface_name, panel_configs in panel_material_assignments.items():
@@ -57,5 +60,6 @@ class SatelliteConfiguration:
             surface_materials=surface_materials,
             surface_optical_assignments=surface_optical_assignments,
             material_properties=material_properties,
-            panel_material_assignments=panel_material_assignments
+            panel_material_assignments=panel_material_assignments,
+            conductance_matrix=conductance_matrix
         ) 
