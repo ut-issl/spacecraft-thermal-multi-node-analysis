@@ -73,7 +73,7 @@ python batch_analysis.py batch analysis_config_template.csv
 ### 地球周回軌道の非定常解析
 
 ```bash
-python multi-node_analysis.py --mode earth --altitude 600 --beta 0 --num_orbits 5 --output_dir output
+python multi-node_analysis.py --mode earth --altitude 600 --beta 0 --duration 40010 --output_dir output
 ```
 - `--altitude`：軌道高度 [km]
 - `--beta`：ベータ角 [度]
@@ -84,7 +84,7 @@ python multi-node_analysis.py --mode earth --altitude 600 --beta 0 --num_orbits 
 ### 深宇宙探査機の非定常解析
 
 ```bash
-python multi-node_analysis.py --mode deep_space --sun_x 1 --sun_y 0 --sun_z 0 --duration 10000 --output_dir output
+python multi-node_analysis.py --mode deep_space --sun_x 1 --sun_y 0 --sun_z 0 --duration 10010 --output_dir output
 ```
 - `--sun_x`, `--sun_y`, `--sun_z`：太陽方向ベクトル（衛星機体座標系、正規化不要）
 - `--duration`：解析時間 [秒]（省略時は6000秒）
