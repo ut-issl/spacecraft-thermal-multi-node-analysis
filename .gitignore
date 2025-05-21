@@ -99,3 +99,6 @@ output/
 
 # comparison
 comparison/
+
+# settings
+!settings/cij_matrix.csv
