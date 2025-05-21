@@ -302,6 +302,7 @@ class ViewFactorMatrix:
         df = pd.DataFrame(self.matrix, index=self.surface_names, columns=self.surface_names)
         df.to_csv(filepath)
 
+@dataclass
 class ThermalNode:
     def __init__(self, initial_temp: float):
         self.surfaces: Dict[str, Surface] = {}
@@ -313,6 +314,8 @@ class ThermalNode:
         self._rij_cache = None  # Rijキャッシュ
         self._rij_names = None
         self.initial_temp = initial_temp
+        self.conductance_matrix: Optional[pd.DataFrame] = None  # コンダクタンス行列
+        self.enable_conductance: bool = False  # コンダクタンスの有効/無効
 
     def add_surface(self, surface: Surface):
         """面を追加し、初期温度を設定"""
@@ -369,6 +372,34 @@ class ThermalNode:
             interpanel_heat[name] = q
         return interpanel_heat
 
+    def set_conductance_matrix(self, matrix: pd.DataFrame, enable: bool):
+        """コンダクタンス行列を設定"""
+        self.conductance_matrix = matrix
+        self.enable_conductance = enable
+
+    def calculate_conductance_heat(self) -> Dict[str, float]:
+        """
+        コンダクタンスによる熱伝導を計算
+        
+        Returns:
+            Dict[str, float]: 各面のコンダクタンスによる熱収支 [W]
+        """
+        if not self.enable_conductance or self.conductance_matrix is None:
+            return {name: 0.0 for name in self.surfaces.keys()}
+        
+        conductance_heat = {}
+        for surface_name in self.surfaces.keys():
+            heat = 0.0
+            for other_name in self.surfaces.keys():
+                if surface_name != other_name:
+                    # Cij * (Tj - Ti) の形式で計算
+                    cij = self.conductance_matrix.loc[surface_name, other_name]
+                    temp_diff = self.temperatures[other_name] - self.temperatures[surface_name]
+                    heat += cij * temp_diff
+            conductance_heat[surface_name] = heat
+        
+        return conductance_heat
+
     def calculate_heat_balance(self, sun_vector: np.ndarray, earth_vector: np.ndarray = None,
                              in_eclipse: bool = False, time: float = 0.0,
                              altitude: float = None, orbit_normal: np.ndarray = None) -> Dict[str, float]:
@@ -383,6 +414,10 @@ class ThermalNode:
         
         # パネル間輻射（Rij法、宇宙放射含む）を一度だけ計算
         interpanel_radiation = self.calculate_interpanel_radiation(stefan_boltzmann)
+        
+        # コンダクタンスによる熱伝導を計算
+        conductance_heat = self.calculate_conductance_heat()
+        
         heat_balances = {}
         
         # 各面の熱収支を計算
@@ -455,13 +490,17 @@ class ThermalNode:
                 albedo_heat=albedo_heat if enable_albedo else 0.0,
                 earth_ir_heat=earth_ir_heat if enable_earth_ir else 0.0,
                 interpanel_radiation=interpanel_radiation.get(surface_name, 0.0),
+                conductance_heat=conductance_heat.get(surface_name, 0.0),
                 total_heat=heat_balances[surface_name],
                 temperature=self.temperatures[surface_name]
             ))
         
-        # パネル間輻射の計算と加算
-        for surface_name, heat in interpanel_radiation.items():
-            heat_balances[surface_name] += heat
+        # パネル間輻射とコンダクタンスの計算と加算
+        for surface_name in self.surfaces.keys():
+            heat_balances[surface_name] += (
+                interpanel_radiation.get(surface_name, 0.0) +
+                conductance_heat.get(surface_name, 0.0)
+            )
         
         return heat_balances
 
