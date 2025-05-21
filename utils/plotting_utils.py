@@ -12,7 +12,18 @@ plt.rcParams['font.family'] = 'Arial'
 plt.rcParams['font.sans-serif'] = ['Arial']
 plt.rcParams['axes.unicode_minus'] = False  # マイナス記号の文字化け防止
 
-def plot_temperature_profile(times: List[float], temperatures: Dict[str, List[float]], output_dir: str, eclipse_flags: Optional[List[bool]] = None, temp_grid_interval: float = 10.0):
+# パネルの色マッピング（固定）
+# 視覚的に区別しやすい色を選択
+PANEL_COLORS = {
+    'PX': '#FF0000',  # 赤
+    'MX': '#FFA500',  # オレンジ
+    'PY': '#0000FF',  # 青
+    'MY': '#800080',  # 紫
+    'PZ': '#008000',  # 緑
+    'MZ': '#FF1493'   # ピンク
+}
+
+def plot_temperature_profile(times: List[float], temperatures: Dict[str, List[float]], output_dir: str, eclipse_flags: Optional[List[bool]] = None, temp_grid_interval: float = 5.0):
     """Plot and save temperature history
     eclipse_flags: 各時刻で蝕中かどうかのリスト（Trueならグレー背景）
     MLIノードの温度はグラフには表示しない
@@ -41,6 +52,20 @@ def plot_temperature_profile(times: List[float], temperatures: Dict[str, List[fl
         else:
             component_temps[name] = temp_history
     
+    # コンポーネントの色を動的に割り当てる関数
+    def get_component_colors(component_names: List[str]) -> Dict[str, str]:
+        # matplotlibのデフォルトの色サイクルを取得
+        default_colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+        # パネルで使用している色を除外
+        used_colors = set(PANEL_COLORS.values())
+        available_colors = [c for c in default_colors if c not in used_colors]
+        
+        # コンポーネント名をソートして一貫性のある色割り当てを保証
+        sorted_components = sorted(component_names)
+        # 利用可能な色を循環して使用
+        return {name: available_colors[i % len(available_colors)] 
+                for i, name in enumerate(sorted_components)}
+    
     # 共通のプロット設定関数
     def plot_temperature_subplot(temp_dict: Dict[str, List[float]], title: str, filename: str):
         plt.figure(figsize=(10, 6))
@@ -60,13 +85,28 @@ def plot_temperature_profile(times: List[float], temperatures: Dict[str, List[fl
         plt.grid(True, which='major', axis='y', linestyle='-', alpha=0.3)
         plt.yticks(np.arange(min_temp, max_temp + temp_grid_interval, temp_grid_interval))
         
-        for name, temp_history in temp_dict.items():
+        # コンポーネントの色を取得
+        component_names = [name for name in temp_dict.keys() if name not in PANEL_COLORS]
+        component_colors = get_component_colors(component_names)
+        
+        # プロット順序を制御（パネル→コンポーネント）
+        plot_order = sorted(temp_dict.keys(), key=lambda x: (x not in ['PX', 'MX', 'PY', 'MY', 'PZ', 'MZ'], x))
+        
+        for name in plot_order:
+            temp_history = temp_dict[name]
             # Convert Kelvin to Celsius
             temp_celsius = [temp - 273.15 for temp in temp_history]
             # 時間と温度の長さが一致することを確認
             if len(times) != len(temp_celsius):
                 raise ValueError(f"時間と温度のデータ長が一致しません。name: {name}, times: {len(times)}, temperatures: {len(temp_celsius)}")
-            plt.plot(times, temp_celsius, label=name)
+            
+            # 色の設定
+            if name in PANEL_COLORS:
+                color = PANEL_COLORS[name]
+            else:
+                color = component_colors[name]
+            
+            plt.plot(times, temp_celsius, label=name, color=color)
         
         # 蝕中の時間帯にグレー背景を描画
         if eclipse_flags is not None and len(eclipse_flags) == len(times):
