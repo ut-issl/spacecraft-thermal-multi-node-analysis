@@ -122,6 +122,10 @@ def run_earth_orbit_analysis(config: SatelliteConfiguration, altitude: float,
         node.add_surface(surface)
         node.set_internal_heat(surface.name, config.internal_heat[surface.name])
     
+    # コンポーネントの追加
+    for component in config.components.values():
+        node.add_component(component)
+    
     # コンダクタンス行列の設定
     node.set_conductance_matrix(config.conductance_matrix, config.enable_conductance)
     
@@ -132,6 +136,9 @@ def run_earth_orbit_analysis(config: SatelliteConfiguration, altitude: float,
     for surface_name, surface in node.surfaces.items():
         if surface.has_mli:
             temperatures[f"{surface_name}_MLI"] = [surface.mli_node.temperature]
+    # コンポーネントの温度も記録
+    for component_name in node.components.keys():
+        temperatures[component_name] = [node.get_component_temperature(component_name)]
     
     # 蝕フラグの記録
     eclipse_flags = [False]
@@ -182,6 +189,9 @@ def run_earth_orbit_analysis(config: SatelliteConfiguration, altitude: float,
             # MLIノードの温度も記録
             if node.surfaces[surface_name].has_mli:
                 temperatures[f"{surface_name}_MLI"].append(node.surfaces[surface_name].mli_node.temperature)
+        # コンポーネントの温度も記録
+        for component_name in node.components.keys():
+            temperatures[component_name].append(node.get_component_temperature(component_name))
         # 蝕フラグの記録
         eclipse_flags.append(bool(in_eclipse))
     
@@ -218,6 +228,10 @@ def run_deep_space_analysis(config: SatelliteConfiguration,
         node.add_surface(surface)
         node.set_internal_heat(surface.name, config.internal_heat[surface.name])
 
+    # コンポーネントの追加
+    for component in config.components.values():
+        node.add_component(component)
+
     # コンダクタンス行列の設定
     node.set_conductance_matrix(config.conductance_matrix, config.enable_conductance)
     
@@ -228,6 +242,9 @@ def run_deep_space_analysis(config: SatelliteConfiguration,
     for surface_name, surface in node.surfaces.items():
         if surface.has_mli:
             temperatures[f"{surface_name}_MLI"] = [surface.mli_node.temperature]
+    # コンポーネントの温度も記録
+    for component_name in node.components.keys():
+        temperatures[component_name] = [node.get_component_temperature(component_name)]
     
     # 蝕フラグの記録（深宇宙では常にFalse）
     eclipse_flags = [False]
@@ -244,6 +261,9 @@ def run_deep_space_analysis(config: SatelliteConfiguration,
             # MLIノードの温度も記録
             if node.surfaces[surface_name].has_mli:
                 temperatures[f"{surface_name}_MLI"].append(node.surfaces[surface_name].mli_node.temperature)
+        # コンポーネントの温度も記録
+        for component_name in node.components.keys():
+            temperatures[component_name].append(node.get_component_temperature(component_name))
         eclipse_flags.append(False)
 
     return times.tolist(), temperatures, node.heat_input_records, eclipse_flags

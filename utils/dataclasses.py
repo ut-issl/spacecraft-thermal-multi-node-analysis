@@ -42,4 +42,18 @@ class MLINode:
     temperature: float  # 温度 [K]
     area: float  # 面積 [m^2]
     heat_input: float  # 熱入力 [W]
-    heat_output: float  # 熱出力 [W] 
+    heat_output: float  # 熱出力 [W]
+
+@dataclass
+class ComponentProperties:
+    """コンポーネントの熱物性"""
+    name: str  # コンポーネント名
+    mass: float  # 質量 [kg]
+    specific_heat: float  # 比熱 [J/kg/K]
+    mounting_panel: str  # 取り付けパネル名
+    thermal_conductance: float  # 締結部の熱コンダクタンス [W/K]
+
+    @property
+    def heat_capacity(self) -> float:
+        """熱容量 [J/K]を計算"""
+        return self.mass * self.specific_heat 

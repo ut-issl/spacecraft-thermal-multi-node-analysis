@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import numpy as np
 from typing import Dict, List, Tuple
-from .dataclasses import SurfaceMaterial, MaterialProperties
+from .dataclasses import SurfaceMaterial, MaterialProperties, ComponentProperties
 
 def load_constants() -> dict:
     """定数ファイルを読み込む"""
@@ -89,3 +89,21 @@ def load_conductance_matrix() -> pd.DataFrame:
         raise ValueError("コンダクタンス行列は対称行列である必要があります")
     
     return df 
+
+def load_component_properties() -> Dict[str, ComponentProperties]:
+    """コンポーネントの熱物性値を読み込む"""
+    with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'settings', 'component_properties.yaml'), 'r') as f:
+        data = yaml.safe_load(f)
+    
+    # コンポーネントの定義を読み込み
+    component_properties = {}
+    for name, props in data['component_properties'].items():
+        component_properties[name] = ComponentProperties(
+            name=props['name'],
+            mass=props['mass'],
+            specific_heat=props['specific_heat'],
+            mounting_panel=props['mounting']['panel'],
+            thermal_conductance=props['mounting']['thermal_conductance']
+        )
+    
+    return component_properties 

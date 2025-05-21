@@ -12,63 +12,139 @@ plt.rcParams['font.family'] = 'Arial'
 plt.rcParams['font.sans-serif'] = ['Arial']
 plt.rcParams['axes.unicode_minus'] = False  # マイナス記号の文字化け防止
 
-def plot_temperature_profile(times: List[float], temperatures: Dict[str, List[float]], output_dir: str, eclipse_flags: Optional[List[bool]] = None, temp_grid_interval: float = 10.0):
+# パネルの色マッピング（固定）
+# 視覚的に区別しやすい色を選択
+PANEL_COLORS = {
+    'PX': '#FF0000',  # 赤
+    'MX': '#FFA500',  # オレンジ
+    'PY': '#0000FF',  # 青
+    'MY': '#800080',  # 紫
+    'PZ': '#008000',  # 緑
+    'MZ': '#FF1493'   # ピンク
+}
+
+def plot_temperature_profile(times: List[float], temperatures: Dict[str, List[float]], output_dir: str, eclipse_flags: Optional[List[bool]] = None, temp_grid_interval: float = 5.0):
     """Plot and save temperature history
     eclipse_flags: 各時刻で蝕中かどうかのリスト（Trueならグレー背景）
     MLIノードの温度はグラフには表示しない
     temp_grid_interval: 等温線の間隔 [°C]
+    
+    以下の3種類のプロファイルを出力:
+    1. temperature_panel.png: パネル温度のみ
+    2. temperature_components.png: コンポーネント温度のみ
+    3. temperature_all.png: 全温度（パネルとコンポーネント）
     """
-    plt.figure(figsize=(10, 6))
+    # パネルとコンポーネントの温度データを分離
+    panel_temps = {}
+    component_temps = {}
     
-    # 温度の範囲を取得（ケルビンから摂氏に変換）
-    all_temps = []
-    for surface_name, temp_history in temperatures.items():
+    for name, temp_history in temperatures.items():
         # MLIノードの温度は除外
-        if not surface_name.endswith('_MLI'):
-            all_temps.extend([temp - 273.15 for temp in temp_history])
-    
-    if not all_temps:  # 温度データが空の場合のエラー処理
-        raise ValueError("有効な温度データが見つかりません。MLIノード以外の温度データが必要です。")
-    
-    min_temp = np.floor(min(all_temps) / temp_grid_interval) * temp_grid_interval
-    max_temp = np.ceil(max(all_temps) / temp_grid_interval) * temp_grid_interval
-    
-    # 等温線のグリッドを描画
-    plt.grid(True, which='major', axis='y', linestyle='-', alpha=0.3)
-    plt.yticks(np.arange(min_temp, max_temp + temp_grid_interval, temp_grid_interval))
-    
-    for surface_name, temp_history in temperatures.items():
-        # MLIノードの温度はスキップ
-        if surface_name.endswith('_MLI'):
+        if name.endswith('_MLI'):
             continue
-        # Convert Kelvin to Celsius
-        temp_celsius = [temp - 273.15 for temp in temp_history]
-        plt.plot(times, temp_celsius, label=surface_name)
+        # 温度履歴がリストでない場合はリストに変換
+        if not isinstance(temp_history, list):
+            temp_history = [temp_history]
+        
+        # パネルとコンポーネントを分類
+        if name in ['PX', 'MX', 'PY', 'MY', 'PZ', 'MZ']:
+            panel_temps[name] = temp_history
+        else:
+            component_temps[name] = temp_history
     
-    # 蝕中の時間帯にグレー背景を描画
-    if eclipse_flags is not None and len(eclipse_flags) == len(times):
-        in_eclipse = False
-        start = None
-        for i, flag in enumerate(eclipse_flags):
-            if flag and not in_eclipse:
-                start = times[i]
-                in_eclipse = True
-            elif not flag and in_eclipse:
-                end = times[i]
-                plt.axvspan(start, end, color='gray', alpha=0.2, zorder=0)
-                in_eclipse = False
-        # 最後が蝕中で終わる場合
-        if in_eclipse and start is not None:
-            plt.axvspan(start, times[-1], color='gray', alpha=0.2, zorder=0)
+    # コンポーネントの色を動的に割り当てる関数
+    def get_component_colors(component_names: List[str]) -> Dict[str, str]:
+        # matplotlibのデフォルトの色サイクルを取得
+        default_colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+        # パネルで使用している色を除外
+        used_colors = set(PANEL_COLORS.values())
+        available_colors = [c for c in default_colors if c not in used_colors]
+        
+        # コンポーネント名をソートして一貫性のある色割り当てを保証
+        sorted_components = sorted(component_names)
+        # 利用可能な色を循環して使用
+        return {name: available_colors[i % len(available_colors)] 
+                for i, name in enumerate(sorted_components)}
     
-    plt.xlabel('Time [s]')
-    plt.ylabel('Temperature [°C]')
-    plt.title('Temperature History of Satellite Surfaces')
-    plt.legend()
+    # 共通のプロット設定関数
+    def plot_temperature_subplot(temp_dict: Dict[str, List[float]], title: str, filename: str):
+        plt.figure(figsize=(10, 6))
+        
+        # 温度の範囲を取得（ケルビンから摂氏に変換）
+        all_temps = []
+        for temp_history in temp_dict.values():
+            all_temps.extend([temp - 273.15 for temp in temp_history])
+        
+        if not all_temps:  # 温度データが空の場合のエラー処理
+            raise ValueError(f"有効な温度データが見つかりません。{title}の温度データが必要です。")
+        
+        min_temp = np.floor(min(all_temps) / temp_grid_interval) * temp_grid_interval
+        max_temp = np.ceil(max(all_temps) / temp_grid_interval) * temp_grid_interval
+        
+        # 等温線のグリッドを描画
+        plt.grid(True, which='major', axis='y', linestyle='-', alpha=0.3)
+        plt.yticks(np.arange(min_temp, max_temp + temp_grid_interval, temp_grid_interval))
+        
+        # コンポーネントの色を取得
+        component_names = [name for name in temp_dict.keys() if name not in PANEL_COLORS]
+        component_colors = get_component_colors(component_names)
+        
+        # プロット順序を制御（パネル→コンポーネント）
+        plot_order = sorted(temp_dict.keys(), key=lambda x: (x not in ['PX', 'MX', 'PY', 'MY', 'PZ', 'MZ'], x))
+        
+        for name in plot_order:
+            temp_history = temp_dict[name]
+            # Convert Kelvin to Celsius
+            temp_celsius = [temp - 273.15 for temp in temp_history]
+            # 時間と温度の長さが一致することを確認
+            if len(times) != len(temp_celsius):
+                raise ValueError(f"時間と温度のデータ長が一致しません。name: {name}, times: {len(times)}, temperatures: {len(temp_celsius)}")
+            
+            # 色の設定
+            if name in PANEL_COLORS:
+                color = PANEL_COLORS[name]
+            else:
+                color = component_colors[name]
+            
+            plt.plot(times, temp_celsius, label=name, color=color)
+        
+        # 蝕中の時間帯にグレー背景を描画
+        if eclipse_flags is not None and len(eclipse_flags) == len(times):
+            in_eclipse = False
+            start = None
+            for i, flag in enumerate(eclipse_flags):
+                if flag and not in_eclipse:
+                    start = times[i]
+                    in_eclipse = True
+                elif not flag and in_eclipse:
+                    end = times[i]
+                    plt.axvspan(start, end, color='gray', alpha=0.2, zorder=0)
+                    in_eclipse = False
+            # 最後が蝕中で終わる場合
+            if in_eclipse and start is not None:
+                plt.axvspan(start, times[-1], color='gray', alpha=0.2, zorder=0)
+        
+        plt.xlabel('Time [s]')
+        plt.ylabel('Temperature [°C]')
+        plt.title(title)
+        plt.legend()
+        
+        # Save and close the plot
+        plt.savefig(os.path.join(output_dir, filename))
+        plt.close()
     
-    # Save and close the plot
-    plt.savefig(os.path.join(output_dir, 'temperature_profile.png'))
-    plt.close()
+    # パネル温度のプロット
+    if panel_temps:
+        plot_temperature_subplot(panel_temps, 'Temperature History of Satellite Panels', 'temperature_panel.png')
+    
+    # コンポーネント温度のプロット
+    if component_temps:
+        plot_temperature_subplot(component_temps, 'Temperature History of Components', 'temperature_components.png')
+    
+    # 全温度のプロット
+    all_temps = {**panel_temps, **component_temps}
+    if all_temps:
+        plot_temperature_subplot(all_temps, 'Temperature History of All Elements', 'temperature_all.png')
 
 def save_temperature_data(times: List[float], temperatures: Dict[str, List[float]], output_dir: str):
     """
