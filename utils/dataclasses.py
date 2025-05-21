@@ -29,6 +29,7 @@ class HeatInputRecord:
     albedo_heat: float  # アルベド熱 [W]
     earth_ir_heat: float  # 地球赤外熱 [W]
     interpanel_radiation: float  # パネル間輻射による熱収支 [W]
+    conductance_heat: float  # コンダクタンスによる熱伝導 [W]
     total_heat: float  # 合計熱量 [W]
     temperature: float  # 面の温度 [K]
 

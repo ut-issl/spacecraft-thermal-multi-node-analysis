@@ -1,5 +1,7 @@
 import yaml
 import os
+import pandas as pd
+import numpy as np
 from typing import Dict, List, Tuple
 from .dataclasses import SurfaceMaterial, MaterialProperties
 
@@ -58,4 +60,32 @@ def load_panel_material_assignments() -> Dict[str, List[Dict[str, float]]]:
     with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'settings', 'material_properties.yaml'), 'r') as f:
         data = yaml.safe_load(f)
     
-    return data['panel_material_assignments'] 
+    return data['panel_material_assignments']
+
+def load_conductance_matrix() -> pd.DataFrame:
+    """
+    パネル間の熱伝導率を定義するコンダクタンス行列を読み込む
+    
+    Returns:
+        pd.DataFrame: コンダクタンス行列（ノード間の熱伝導率 [W/K]）
+    """
+    file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'settings', 'cij_matrix.csv')
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"コンダクタンス行列の設定ファイルが見つかりません: {file_path}")
+    
+    # CSVファイルを読み込み
+    df = pd.read_csv(file_path, index_col=0)
+    
+    # インデックスとカラム名が一致することを確認
+    if not all(df.index == df.columns):
+        raise ValueError("コンダクタンス行列のインデックスとカラム名が一致していません")
+    
+    # 対角成分が0であることを確認
+    if not np.allclose(np.diag(df.values), 0.0):
+        raise ValueError("コンダクタンス行列の対角成分は0である必要があります")
+    
+    # 対称行列であることを確認
+    if not np.allclose(df.values, df.values.T):
+        raise ValueError("コンダクタンス行列は対称行列である必要があります")
+    
+    return df 

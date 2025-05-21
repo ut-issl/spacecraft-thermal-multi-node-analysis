@@ -165,6 +165,7 @@ def save_heat_input_data(records: List[HeatInputRecord],
             'Albedo Heat [W]': record.albedo_heat,
             'Earth IR Heat [W]': record.earth_ir_heat,
             'Interpanel Radiation [W]': record.interpanel_radiation,
+            'Conductance Heat [W]': record.conductance_heat,
             'Total Heat [W]': record.total_heat
         })
     

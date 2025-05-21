@@ -8,6 +8,7 @@
 - 地球周回軌道・深宇宙の**非定常熱解析**
 - ベータ角・軌道高度・太陽方向ベクトル等のパラメータ指定
 - アルベド・地球赤外の有効/無効切替（`settings/constants.yaml`）
+- コンダクタンス行列による熱伝導計算（`settings/cij_matrix.csv`）
 - 各面の温度履歴・熱収支・入力のCSV/グラフ出力
 - ビューファクター行列・Rij行列のCSV出力
 - コマンドラインから柔軟に計算条件を指定可能
@@ -73,7 +74,7 @@ python batch_analysis.py batch analysis_config_template.csv
 ### 地球周回軌道の非定常解析
 
 ```bash
-python multi-node_analysis.py --mode earth --altitude 600 --beta 0 --num_orbits 5 --output_dir output
+python multi-node_analysis.py --mode earth --altitude 600 --beta 0 --duration 40010 --output_dir output
 ```
 - `--altitude`：軌道高度 [km]
 - `--beta`：ベータ角 [度]
@@ -84,7 +85,7 @@ python multi-node_analysis.py --mode earth --altitude 600 --beta 0 --num_orbits 
 ### 深宇宙探査機の非定常解析
 
 ```bash
-python multi-node_analysis.py --mode deep_space --sun_x 1 --sun_y 0 --sun_z 0 --duration 10000 --output_dir output
+python multi-node_analysis.py --mode deep_space --sun_x 1 --sun_y 0 --sun_z 0 --duration 10010 --output_dir output
 ```
 - `--sun_x`, `--sun_y`, `--sun_z`：太陽方向ベクトル（衛星機体座標系、正規化不要）
 - `--duration`：解析時間 [秒]（省略時は6000秒）
@@ -103,12 +104,14 @@ python multi-node_analysis.py --mode deep_space --sun_x 1 --sun_y 0 --sun_z 0 --
   - `constants.yaml`：物理定数、衛星寸法、内部発熱、軌道・解析パラメータ
   - `surface_properties.yaml`：各面の表面材・割合・光学特性
   - `material_properties.yaml`：材料の熱物性値・パネル材料構成
+  - `cij_matrix.csv`：コンダクタンス行列を定義するCSVファイル
 
 ## 設定ファイル
 
 ### `settings/constants.yaml`
 - 物理定数、衛星寸法、内部発熱、軌道・解析パラメータなどを定義
 - `enable_albedo`/`enable_earth_ir`でアルベド・地球赤外の有効/無効を切替
+- `enable_conductance`でコンダクタンス行列の有効/無効を切替
 
 ### `settings/surface_properties.yaml`
 - 各面の表面材・割合・光学特性を定義
@@ -116,9 +119,30 @@ python multi-node_analysis.py --mode deep_space --sun_x 1 --sun_y 0 --sun_z 0 --
 ### `settings/material_properties.yaml`
 - 材料の熱物性値・パネル材料構成を定義
 
+### `settings/cij_matrix.csv`
+- コンダクタンス行列を定義するCSVファイル
+- 形式：
+  - 1行目：面の名前（PX, MX, PY, MY, PZ, MZ）
+  - 2行目以降：各面間のコンダクタンス値 [W/K]
+  - 例：
+    ```csv
+    ,PX,MX,PY,MY,PZ,MZ
+    PX,0,0.1,0.2,0,0.3,0
+    MX,0.1,0,0,0.2,0,0.3
+    PY,0.2,0,0,0.1,0.2,0
+    MY,0,0.2,0.1,0,0,0.2
+    PZ,0.3,0,0.2,0,0,0.1
+    MZ,0,0.3,0,0.2,0.1,0
+    ```
+- 注意：
+  - 対角成分は0（自身との熱伝導は考慮しない）
+  - 対称行列である必要はない（方向性のある熱伝導を表現可能）
+  - 値は正の実数（負の値は無効）
+
 ## 物理モデル・アルゴリズム
 - 地球赤外・アルベドのビューファクターは球体モデル・Banister近似等を用いて厳密に計算
 - 面間輻射はRij法で厳密に計算
+- コンダクタンス行列による熱伝導計算（Cij * (Tj - Ti)の形式）
 - 姿勢・軌道パラメータは設定ファイルまたはコマンドラインで柔軟に指定可能
 
 ## 温度データ比較機能

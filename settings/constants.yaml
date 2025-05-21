@@ -57,6 +57,7 @@ orbit_parameters:
 analysis_parameters:
   initial_temperature: 293.15  # 初期温度 [K]
   time_step: 10             # 時間ステップ [秒]
-  convergence_criteria: 0.01   # 収束判定基準 [K] 
+  convergence_criteria: 0.01   # 収束判定基準 [K]
+  enable_conductance: false    # パネル間の熱伝導（Cij）を有効にするかどうか
 
 debug: false
