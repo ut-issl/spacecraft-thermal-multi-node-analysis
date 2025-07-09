@@ -6,7 +6,7 @@ import math
 
 def load_constants() -> dict:
     """定数ファイルを読み込む"""
-    with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'settings', 'constants.yaml'), 'r') as f:
+    with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'settings', 'constants.yaml'), 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
 
 def calculate_orbit_parameters(altitude: float, beta_angle: float) -> Tuple[float, float, float, np.ndarray, np.ndarray, np.ndarray]:
