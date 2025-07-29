@@ -86,15 +86,19 @@ surface_optical_assignments:
         ratio: 1.0
   PY:  # +Y
     outside:
+      - material: "AK"
+        ratio: 0.7
       - material: "AT"
-        ratio: 1.0
+        ratio: 0.3
     inside:
       - material: "Black_Paint"
         ratio: 1.0
   MY:  # -Y
     outside:
+      - material: "AK"
+        ratio: 0.7
       - material: "AT"
-        ratio: 1.0
+        ratio: 0.3
     inside:
       - material: "Black_Paint"
         ratio: 1.0
