@@ -18,24 +18,24 @@ panel_material_assignments:
   PX:  # +X
     - material: "Aluminum"
       ratio: 1.0
-      thickness: 2.0  # mm
+      thickness: 15.0  # mm
   MX:  # -X
     - material: "Aluminum"
       ratio: 1.0
-      thickness: 2.0  # mm
+      thickness: 15.0  # mm
   PY:  # +Y
     - material: "Aluminum"
       ratio: 1.0
-      thickness: 2.0  # mm
+      thickness: 15.0  # mm
   MY:  # -Y
     - material: "Aluminum"
       ratio: 1.0
-      thickness: 2.0  # mm
+      thickness: 15.0  # mm
   PZ:  # +Z
     - material: "Aluminum"
       ratio: 1.0
-      thickness: 2.0  # mm
+      thickness: 15.0  # mm
   MZ:  # -Z
     - material: "Aluminum"
       ratio: 1.0
-      thickness: 2.0  # mm 
+      thickness: 15.0  # mm 
