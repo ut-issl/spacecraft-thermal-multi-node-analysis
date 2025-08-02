@@ -72,42 +72,42 @@ surface_materials:
 surface_optical_assignments:
   PX:  # +X
     outside:
-      - material: "AK"
+      - material: "CFRP"
         ratio: 1.0
     inside:
       - material: "Black_Paint"
         ratio: 1.0
   MX:  # -X
     outside:
-      - material: "AK"
+      - material: "CFRP"
         ratio: 1.0
     inside:
       - material: "Black_Paint"
         ratio: 1.0
   PY:  # +Y
     outside:
-      - material: "AK"
+      - material: "CFRP"
         ratio: 1.0
     inside:
       - material: "Black_Paint"
         ratio: 1.0
   MY:  # -Y
     outside:
-      - material: "MLI"
+      - material: "CFRP"
         ratio: 1.0
     inside:
       - material: "Black_Paint"
         ratio: 1.0
   PZ:  # +Z
     outside:
-      - material: "AK"
+      - material: "CFRP"
         ratio: 1.0
     inside:
       - material: "Black_Paint"
         ratio: 1.0
   MZ:  # -Z
     outside:
-      - material: "AT"
+      - material: "CFRP"
         ratio: 1.0
     inside:
       - material: "Black_Paint"
