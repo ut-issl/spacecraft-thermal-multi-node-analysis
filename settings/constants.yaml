@@ -36,7 +36,7 @@ satellite_attitude:
     secondary_axis:                   # 第2軸の設定
       #axis: "PY" 
       axis: "MY"                     # 使用する衛星軸（primary_axis と異なるもの）
-      direction: "velocity_vector"    # 向きの選択肢: velocity_vector, nadir_pointing, sun_pointing, orbit_normal, custom
+      direction: "nadir_pointing"    # 向きの選択肢: velocity_vector, nadir_pointing, sun_pointing, orbit_normal, custom
                                    # 選択肢: "nadir_pointing", "sun_pointing", "velocity_vector", "orbit_normal", "custom"
   # カスタム姿勢の場合の回転行列（オイラー角）[度]
   # 注意: primary_axis または secondary_axis.direction が "custom" の場合に使用
