@@ -7,12 +7,12 @@ from .dataclasses import SurfaceMaterial, MaterialProperties, ComponentPropertie
 
 def load_constants() -> dict:
     """定数ファイルを読み込む"""
-    with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'settings', 'constants.yaml'), 'r', encoding='utf-8') as f:
+    with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'settings', 'constants.yaml'), 'r') as f:
         return yaml.safe_load(f)
 
 def load_surface_properties() -> Tuple[Dict[str, SurfaceMaterial], Dict[str, List[Dict[str, float]]]]:
     """表面光学特性を読み込む"""
-    with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'settings', 'surface_properties.yaml'), 'r', encoding='utf-8') as f:
+    with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'settings', 'surface_properties.yaml'), 'r') as f:
         data = yaml.safe_load(f)
     
     # 表面材料の定義を読み込み
@@ -39,7 +39,7 @@ def load_surface_properties() -> Tuple[Dict[str, SurfaceMaterial], Dict[str, Lis
 
 def load_material_properties() -> Dict[str, MaterialProperties]:
     """材料物性を読み込む"""
-    with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'settings', 'material_properties.yaml'), 'r', encoding='utf-8') as f:
+    with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'settings', 'material_properties.yaml'), 'r') as f:
         data = yaml.safe_load(f)
     
     # 材料物性の定義を読み込み
@@ -57,7 +57,7 @@ def load_material_properties() -> Dict[str, MaterialProperties]:
 
 def load_panel_material_assignments() -> Dict[str, List[Dict[str, float]]]:
     """パネルの材料構成を読み込む"""
-    with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'settings', 'material_properties.yaml'), 'r', encoding='utf-8') as f:
+    with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'settings', 'material_properties.yaml'), 'r') as f:
         data = yaml.safe_load(f)
     
     return data['panel_material_assignments']
@@ -92,7 +92,7 @@ def load_conductance_matrix() -> pd.DataFrame:
 
 def load_component_properties() -> Dict[str, ComponentProperties]:
     """コンポーネントの熱物性値を読み込む"""
-    with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'settings', 'component_properties.yaml'), 'r', encoding='utf-8') as f:
+    with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'settings', 'component_properties.yaml'), 'r') as f:
         data = yaml.safe_load(f)
     
     # コンポーネントの定義を読み込み
