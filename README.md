@@ -133,7 +133,7 @@ python multi-node_analysis.py --mode deep_space --sun_x 1 --sun_y 0 --sun_z 0 --
 - 材料の熱物性値・パネル材料構成を定義
 
 ### `settings/cij_matrix.csv`
-- コンダクタンス行列を定義するCSVファイル。単位は[W/K]
+- コンダクタンス行列を定義するCSVファイル
 - 形式：
   - 1行目：面の名前（PX, MX, PY, MY, PZ, MZ）
   - 2行目以降：各面間のコンダクタンス値 [W/K]
