@@ -24,7 +24,8 @@ component_properties:
       target: "BAT"           # BAT に直接取付
       thermal_conductance: 5.0 # W/K
 ```
-* `mounting.target` で取付相手を指定。パネル名 (PX, MY, …) もしくは他コンポ名を許容。  
+* `mounting.target` で取付相手を指定。**YAML でのキー名** (PX, MY, BAT, …) を使用。  
+  • 例: `target: "BAT"` とすると BAT2 ⇔ BAT の熱伝導。  
 * 旧キー `panel` も読み込み時に自動的に `target` として解釈し、後方互換を確保。
 
 ---
@@ -43,7 +44,7 @@ class ComponentProperties:
     def mounting_panel(self) -> str:
         return self.mounting_target
 ```
-* 新フィールド `mounting_target` を追加。  
+* 新フィールド `mounting_target` を追加（YAML キー名を保持）。  
 * 既存コードを壊さないよう `mounting_panel` プロパティで互換性維持。
 
 ---
@@ -61,7 +62,7 @@ class ComponentProperties:
 
 `utils/thermal_utils.py`
 * 追加属性
-  * `self.component_links: Dict[str, Tuple[str, float]]` — `コンポ名 → (ターゲット名, C)`
+  * `self.component_links: Dict[str, Tuple[str, float]]` — `YAMLキー → (ターゲットYAMLキー, C)`
 * `add_component()`
   * 取付ターゲットを確認し初期温度を設定。
   * `component_links` に登録。
