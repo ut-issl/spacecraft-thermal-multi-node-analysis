@@ -98,12 +98,16 @@ def load_component_properties() -> Dict[str, ComponentProperties]:
     # コンポーネントの定義を読み込み
     component_properties = {}
     for name, props in data['component_properties'].items():
+                # パネル名でもコンポ名でも指定できるよう target を取得（後方互換で panel も許容）
+        mounting_dict = props['mounting']
+        target = mounting_dict.get('target') or mounting_dict.get('panel')
+
         component_properties[name] = ComponentProperties(
             name=props['name'],
             mass=props['mass'],
             specific_heat=props['specific_heat'],
-            mounting_panel=props['mounting']['panel'],
-            thermal_conductance=props['mounting']['thermal_conductance']
+            mounting_target=target,
+            thermal_conductance=mounting_dict['thermal_conductance']
         )
     
     return component_properties 
