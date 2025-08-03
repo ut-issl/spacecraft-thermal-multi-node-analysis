@@ -1,0 +1,114 @@
+# 表面光学特性テーブル
+# 各表面材の特性を定義
+# α: 太陽吸収率
+# ε: 赤外放射率
+
+surface_materials:
+
+  OSR:
+    name: "Optical Solar Reflector"
+    alpha: 0.08
+    epsilon: 0.80
+    description: "光学太陽反射材（アルミニウム基板）"
+
+  Black_Paint:
+    name: "Black Paint"
+    alpha: 0.90
+    epsilon: 0.85
+    description: "黒色塗装"
+
+  White_Paint:
+    name: "White Paint"
+    alpha: 0.25
+    epsilon: 0.85
+    description: "白色塗装"
+
+  Solar_Cell:
+    name: "Solar Cell"
+    alpha: 0.92
+    epsilon: 0.85
+    description: "太陽電池セル（シリコン）"
+
+  CFRP:
+    name: "Carbon Fiber Reinforced Plastic"
+    alpha: 0.85
+    epsilon: 0.85
+    description: "炭素繊維強化プラスチック"
+
+  Aluminum:
+    name: "Aluminum Alloy"
+    alpha: 0.20
+    epsilon: 0.10
+    description: "アルミニウム合金"
+
+  AK:
+    name: "Aluminized Kapton"
+    alpha: 0.14
+    epsilon: 0.04
+    description: "アルミニウム蒸着カプトン"
+
+  AT:
+    name: "Silverized(Ag) Teflon"
+    alpha: 0.10
+    epsilon: 0.76
+    description: "銀蒸着テフロン"
+
+  MLI:
+    name: "Multi-Layer Insulation"
+    alpha: 0.14
+    epsilon: 0.04
+    effective_emissivity: 0.03  # MLI特有の実効放射率
+    description: "多層断熱材"
+
+  BK:
+    name: "Black Kapton"
+    alpha: 0.80
+    epsilon: 0.80
+    description: "黒色カプトン"
+
+# 面の表面光学特性割り当て定義
+# 各面の外側（宇宙空間側）と内側（衛星内部側）の材料とその割合（面積比）を定義
+# 各側の割合の合計が1.0になるように設定
+surface_optical_assignments:
+  PX:  # +X
+    outside:
+      - material: "CFRP"
+        ratio: 1.0
+    inside:
+      - material: "Black_Paint"
+        ratio: 1.0
+  MX:  # -X
+    outside:
+      - material: "CFRP"
+        ratio: 1.0
+    inside:
+      - material: "Black_Paint"
+        ratio: 1.0
+  PY:  # +Y
+    outside:
+      - material: "CFRP"
+        ratio: 1.0
+    inside:
+      - material: "Black_Paint"
+        ratio: 1.0
+  MY:  # -Y
+    outside:
+      - material: "CFRP"
+        ratio: 1.0
+    inside:
+      - material: "Black_Paint"
+        ratio: 1.0
+  PZ:  # +Z
+    outside:
+      - material: "CFRP"
+        ratio: 1.0
+    inside:
+      - material: "Black_Paint"
+        ratio: 1.0
+  MZ:  # -Z
+    outside:
+      - material: "CFRP"
+        ratio: 1.0
+    inside:
+      - material: "Black_Paint"
+        ratio: 1.0 
