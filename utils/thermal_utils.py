@@ -540,6 +540,9 @@ class ThermalNode:
                 component_heat_balances[comp_name] += heat
                 component_heat_balances[target] -= heat  # 作用反作用
                 processed_pairs.add(pair)
+            
+            # --- 内部発熱を加算 ---
+            component_heat_balances[comp_name] += component.internal_heat
         
         # コンポーネントの熱収支を追加
         heat_balances.update(component_heat_balances)

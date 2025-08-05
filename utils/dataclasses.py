@@ -57,6 +57,7 @@ class ComponentProperties:
     specific_heat: float  # 比熱 [J/kg/K]
     mounting_target: str  # 取付相手（パネル名 or コンポ名）
     thermal_conductance: float  # 取付部の熱コンダクタンス [W/K]
+    internal_heat: float = 0.0  # 内部発熱 [W]
 
     # --- backward compatibility -------------------------------------------------
     @property
