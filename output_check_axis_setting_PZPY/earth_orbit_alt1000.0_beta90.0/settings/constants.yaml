@@ -30,12 +30,12 @@ satellite_attitude:
   # 第1軸と第2軸の向きを指定
   earth_orbit_mode:
     primary_axis:                     # 第1軸の設定
-      #axis: "PZ"
-      axis: "MZ"                      # 使用する衛星軸（PX, MX, PY, MY, PZ, MZ）
+      axis: "PZ"
+      #axis: "MZ"                      # 使用する衛星軸（PX, MX, PY, MY, PZ, MZ）
       direction: "sun_pointing"       # 向きの選択肢: sun_pointing, nadir_pointing, velocity_vector, custom
     secondary_axis:                   # 第2軸の設定
-      #axis: "PY" 
-      axis: "MY"                     # 使用する衛星軸（primary_axis と異なるもの）
+      axis: "PY" 
+      #axis: "MY"                     # 使用する衛星軸（primary_axis と異なるもの）
       direction: "nadir_pointing"    # 向きの選択肢: velocity_vector, nadir_pointing, sun_pointing, orbit_normal, custom
                                    # 選択肢: "nadir_pointing", "sun_pointing", "velocity_vector", "orbit_normal", "custom"
   # カスタム姿勢の場合の回転行列（オイラー角）[度]

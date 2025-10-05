@@ -1,0 +1,21 @@
+# コンポーネントの熱物性値定義
+# 質量: kg
+# 比熱: J/kg/K
+# 締結熱コンダクタンス: W/K
+
+component_properties:
+  BAT:  # バッテリ
+    name: "Battery"
+    mass: 2.1  # 質量 [kg]
+    specific_heat: 700.0  # 比熱 [J/kg/K]
+    mounting:
+      panel: "PZ"  # +Z面に取り付け
+      thermal_conductance: 0.0  # 締結部の熱コンダクタンス
+
+  RW:  # リアクションホイール
+    name: "Reaction Wheel"
+    mass: 3.0  # 質量 [kg]
+    specific_heat: 900.0  # 比熱 [J/kg/K]
+    mounting:
+      panel: "MX"  # -X面に取り付け
+      thermal_conductance: 0.0  # 締結部の熱コンダクタンス

@@ -155,44 +155,70 @@ def calculate_satellite_attitude(position: np.ndarray, velocity: np.ndarray,
         py = orbit_normal
         px = np.cross(py, pz)
     else:
-        # 設定に基づいて姿勢を決定
-        primary_mode = attitude_config['primary_axis']
-        secondary_mode = attitude_config['secondary_axis']['direction']
-        secondary_axis = attitude_config['secondary_axis']['axis']
-        
-        # 第1軸（PZ）の向きを決定
-        if primary_mode == "sun_pointing":
-            pz = sun_dir
-        elif primary_mode == "nadir_pointing":
-            pz = nadir
-        elif primary_mode == "velocity_vector":
-            pz = velocity_dir
-        else:  # custom
-            pz = nadir  # デフォルトはnadir
-        
-        # 第2軸の向きを決定
-        if secondary_mode == "nadir_pointing":
-            secondary_dir = nadir
-        elif secondary_mode == "sun_pointing":
-            secondary_dir = sun_dir
-        elif secondary_mode == "velocity_vector":
-            secondary_dir = velocity_dir
-        elif secondary_mode == "orbit_normal":
-            secondary_dir = orbit_normal
-        else:  # custom
-            secondary_dir = orbit_normal  # デフォルトはorbit_normal
-        
-        # 第2軸を第1軸に直交するように調整
-        secondary_dir = secondary_dir - np.dot(secondary_dir, pz) * pz
-        secondary_dir = secondary_dir / np.linalg.norm(secondary_dir)
-        
-        # 第2軸を指定された軸（PXまたはPY）に割り当て
-        if secondary_axis == "PX":
-            px = secondary_dir
-            py = np.cross(pz, px)
-        else:  # PY
-            py = secondary_dir
-            px = np.cross(py, pz)
+        # ---------------------------------------------
+        # 設定に基づいて姿勢を決定（新フォーマット／旧フォーマット両対応）
+        # ---------------------------------------------
+        # 方向ベクトル候補
+        direction_map = {
+            "sun_pointing": sun_dir,
+            "nadir_pointing": nadir,
+            "velocity_vector": velocity_dir,
+            "orbit_normal": orbit_normal,
+        }
+
+        # ---- Primary axis ----
+        prim_cfg = attitude_config.get("primary_axis")
+        if isinstance(prim_cfg, dict):
+            primary_axis_label = prim_cfg.get("axis", "PZ")
+            primary_mode = prim_cfg.get("direction", "nadir_pointing")
+        else:
+            # 旧形式: 軸はPZ固定で方向だけ指定
+            primary_axis_label = "PZ"
+            primary_mode = prim_cfg
+
+        primary_vec_raw = direction_map.get(primary_mode, nadir)
+        primary_vec_raw = primary_vec_raw / np.linalg.norm(primary_vec_raw)
+
+        # ---- Secondary axis ----
+        sec_cfg = attitude_config.get("secondary_axis", {})
+        if isinstance(sec_cfg, dict):
+            secondary_axis_label = sec_cfg.get("axis", "PY")
+            secondary_mode = sec_cfg.get("direction", "orbit_normal")
+        else:
+            secondary_axis_label = "PY"
+            secondary_mode = sec_cfg
+
+        secondary_vec_raw = direction_map.get(secondary_mode, orbit_normal)
+        # 第1軸に直交化
+        secondary_vec_raw = secondary_vec_raw - np.dot(secondary_vec_raw, primary_vec_raw) * primary_vec_raw
+        secondary_vec_raw = secondary_vec_raw / np.linalg.norm(secondary_vec_raw)
+
+        # ---- 各ボディ正方向軸に割り当て ----
+        body_axes = {"PX": None, "PY": None, "PZ": None}
+
+        def assign(axis_label: str, vec: np.ndarray):
+            if axis_label.startswith("P"):
+                body_axes["P" + axis_label[1]] = vec
+            else:  # M* → 正方向へ符号反転
+                body_axes["P" + axis_label[1]] = -vec
+
+        assign(primary_axis_label, primary_vec_raw)
+        assign(secondary_axis_label, secondary_vec_raw)
+
+        # ---- 残り 1 軸をクロス積で決定 ----
+        if body_axes["PX"] is None:
+            body_axes["PX"] = np.cross(body_axes["PY"], body_axes["PZ"])
+            body_axes["PX"] /= np.linalg.norm(body_axes["PX"])
+        elif body_axes["PY"] is None:
+            body_axes["PY"] = np.cross(body_axes["PZ"], body_axes["PX"])
+            body_axes["PY"] /= np.linalg.norm(body_axes["PY"])
+        elif body_axes["PZ"] is None:
+            body_axes["PZ"] = np.cross(body_axes["PX"], body_axes["PY"])
+            body_axes["PZ"] /= np.linalg.norm(body_axes["PZ"])
+
+        px = body_axes["PX"]
+        py = body_axes["PY"]
+        pz = body_axes["PZ"]
     
     # 正規化
     px = px / np.linalg.norm(px)
