@@ -319,6 +319,8 @@ class ThermalNode:
         # コンポーネント関連の属性を追加
         self.components: Dict[str, ComponentProperties] = {}
         self.component_temperatures: Dict[str, float] = {}
+        # コンポーネント間の伝導リンク（comp_name -> (target_name, C[W/K]))
+        self.component_links: Dict[str, tuple] = {}
 
     def add_surface(self, surface: Surface):
         """面を追加し、初期温度を設定"""
@@ -487,10 +489,10 @@ class ThermalNode:
             
             # コンポーネントとの熱伝導を計算
             component_heat = 0.0
-            for component in self.components.values():
-                if component.mounting_panel == surface_name:
+            for comp_key, component in self.components.items():
+                if component.mounting_target in self.surfaces and component.mounting_target == surface_name:
                     # コンポーネントとパネル間の熱伝導
-                    temp_diff = self.component_temperatures[component.name] - self.temperatures[surface_name]
+                    temp_diff = self.component_temperatures[comp_key] - self.temperatures[surface_name]
                     component_heat += component.thermal_conductance * temp_diff
             
             # コンポーネントとの熱伝導を熱収支に加算
@@ -516,15 +518,31 @@ class ThermalNode:
                 conductance_heat.get(surface_name, 0.0)
             )
         
-        # コンポーネントの熱収支を計算
-        component_heat_balances = {}
-        for component in self.components.values():
-            # コンポーネントとパネル間の熱伝導
-            panel_temp = self.temperatures[component.mounting_panel]
-            component_temp = self.component_temperatures[component.name]
-            temp_diff = panel_temp - component_temp
-            heat = component.thermal_conductance * temp_diff
-            component_heat_balances[component.name] = heat
+        # コンポーネントの熱収支を計算（パネル⇔コンポ と コンポ⇔コンポ）
+        component_heat_balances = {name: 0.0 for name in self.components.keys()}
+        processed_pairs = set()
+        for comp_name, component in self.components.items():
+            target, C = self.component_links[comp_name]
+            comp_temp = self.component_temperatures[comp_name]
+
+            # パネルとの伝導（コンポ側）
+            if target in self.surfaces:
+                tgt_temp = self.temperatures[target]
+                heat = C * (tgt_temp - comp_temp)
+                component_heat_balances[comp_name] += heat
+            # コンポ↔コンポ 伝導
+            elif target in self.components:
+                pair = tuple(sorted([comp_name, target]))
+                if pair in processed_pairs:
+                    continue  # 既に処理済み
+                tgt_temp = self.component_temperatures[target]
+                heat = C * (tgt_temp - comp_temp)
+                component_heat_balances[comp_name] += heat
+                component_heat_balances[target] -= heat  # 作用反作用
+                processed_pairs.add(pair)
+            
+            # --- 内部発熱を加算 ---
+            component_heat_balances[comp_name] += component.internal_heat
         
         # コンポーネントの熱収支を追加
         heat_balances.update(component_heat_balances)
@@ -604,13 +622,32 @@ class ThermalNode:
         os.makedirs(output_dir, exist_ok=True)
         df.to_csv(os.path.join(output_dir, filename))
 
-    def add_component(self, component: ComponentProperties):
-        """コンポーネントを追加し、初期温度を設定"""
-        if component.mounting_panel not in self.surfaces:
-            raise ValueError(f"コンポーネント {component.name} の取り付けパネル {component.mounting_panel} が存在しません")
-        self.components[component.name] = component
-        # コンポーネントの初期温度は取り付けパネルと同じ
-        self.component_temperatures[component.name] = self.temperatures[component.mounting_panel]
+    def add_component(self, comp_key: str, component: ComponentProperties):
+        """コンポーネントを追加し、初期温度を設定
+
+        comp_key: YAML でのキー（識別子）
+        """
+        # 取付ターゲットが存在するか簡易チェック（パネルまたは既登録のコンポ）
+        if component.mounting_target not in self.surfaces and component.mounting_target not in self.components:
+            import warnings
+            warnings.warn(
+                f"コンポーネント {comp_key} の取付ターゲット {component.mounting_target} がまだ存在しません。後で解決されることを想定します。",
+                RuntimeWarning)
+
+        # 登録
+        self.components[comp_key] = component
+
+        # 初期温度設定
+        target = component.mounting_target
+        if target in self.surfaces:
+            self.component_temperatures[comp_key] = self.temperatures[target]
+        elif target in self.component_temperatures:
+            self.component_temperatures[comp_key] = self.component_temperatures[target]
+        else:
+            self.component_temperatures[comp_key] = self.initial_temp
+
+        # 伝導リンク登録
+        self.component_links[comp_key] = (target, component.thermal_conductance)
 
     def get_component_temperature(self, component_name: str) -> float:
         """特定のコンポーネントの温度を取得"""

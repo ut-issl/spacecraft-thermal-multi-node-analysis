@@ -67,8 +67,14 @@ class SatelliteConfiguration:
         
         # コンポーネントの設定を検証
         for name, component in components.items():
-            if component.mounting_panel not in panel_material_assignments:
-                raise ValueError(f"コンポーネント {name} の取り付けパネル {component.mounting_panel} が存在しません")
+            # mounting_target がパネル名の場合のみ存在チェックを行う
+            if component.mounting_target in panel_material_assignments:
+                pass  # OK
+            elif component.mounting_target in components:  # 取付相手が別コンポ
+                pass  # 後段でリンクチェックや循環チェックは別処理
+            else:
+                raise ValueError(
+                    f"コンポーネント {name} の取付ターゲット {component.mounting_target} がパネル名でも既存コンポ名でもありません")
         
         return cls(
             dimensions=constants['satellite_dimensions'],

@@ -46,13 +46,26 @@ class MLINode:
 
 @dataclass
 class ComponentProperties:
-    """コンポーネントの熱物性"""
+    """コンポーネントの熱物性
+
+    mounting_target は取付相手を表す。パネル名(PX,MY…) または
+    他コンポーネント名を自由に指定できる。後方互換のため
+    mounting_panel プロパティを残し、既存コードはそのまま動く。
+    """
     name: str  # コンポーネント名
     mass: float  # 質量 [kg]
     specific_heat: float  # 比熱 [J/kg/K]
-    mounting_panel: str  # 取り付けパネル名
-    thermal_conductance: float  # 締結部の熱コンダクタンス [W/K]
+    mounting_target: str  # 取付相手（パネル名 or コンポ名）
+    thermal_conductance: float  # 取付部の熱コンダクタンス [W/K]
+    internal_heat: float = 0.0  # 内部発熱 [W]
 
+    # --- backward compatibility -------------------------------------------------
+    @property
+    def mounting_panel(self) -> str:
+        """旧コード互換用エイリアス"""
+        return self.mounting_target
+
+    # ---------------------------------------------------------------------------
     @property
     def heat_capacity(self) -> float:
         """熱容量 [J/K]を計算"""

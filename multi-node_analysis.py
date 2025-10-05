@@ -123,8 +123,8 @@ def run_earth_orbit_analysis(config: SatelliteConfiguration, altitude: float,
         node.set_internal_heat(surface.name, config.internal_heat[surface.name])
     
     # コンポーネントの追加
-    for component in config.components.values():
-        node.add_component(component)
+    for comp_key, component in config.components.items():
+        node.add_component(comp_key, component)
     
     # コンダクタンス行列の設定
     node.set_conductance_matrix(config.conductance_matrix, config.enable_conductance)
@@ -229,8 +229,8 @@ def run_deep_space_analysis(config: SatelliteConfiguration,
         node.set_internal_heat(surface.name, config.internal_heat[surface.name])
 
     # コンポーネントの追加
-    for component in config.components.values():
-        node.add_component(component)
+    for comp_key, component in config.components.items():
+        node.add_component(comp_key, component)
 
     # コンダクタンス行列の設定
     node.set_conductance_matrix(config.conductance_matrix, config.enable_conductance)
