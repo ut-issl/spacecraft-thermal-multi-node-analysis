@@ -154,10 +154,9 @@ class ViewFactorMatrix:
         self.dimensions = dimensions
         n = len(self.surface_names)
         self.matrix = np.zeros((n, n))
-        self._debug: bool = debug
-        self._calculate_view_factors(surfaces)
+        self._calculate_view_factors(surfaces, debug=debug)
 
-    def _calculate_view_factors(self, surfaces: Dict[str, Surface]):
+    def _calculate_view_factors(self, surfaces: Dict[str, Surface], *, debug: bool = False):
         """各面間のビューファクターを計算"""
         for i, name_i in enumerate(self.surface_names):
             surface_i = surfaces[name_i]
@@ -167,9 +166,9 @@ class ViewFactorMatrix:
 
                 surface_j = surfaces[name_j]
                 # 面iから面jへのビューファクターを計算
-                self.matrix[i, j] = self._calculate_view_factor(surface_i, surface_j)
+                self.matrix[i, j] = self._calculate_view_factor(surface_i, surface_j, debug=debug)
 
-    def _calculate_view_factor(self, surface_i: Surface, surface_j: Surface) -> float:
+    def _calculate_view_factor(self, surface_i: Surface, surface_j: Surface, *, debug: bool = False) -> float:
         """
         2つの面間のビューファクターを解析解で計算
 
@@ -188,7 +187,7 @@ class ViewFactorMatrix:
         dot_product = np.dot(ni, nj)
 
         if abs(dot_product) == 1.0:  # 対向面（平行）
-            return self._calculate_parallel_view_factor(surface_i, surface_j)
+            return self._calculate_parallel_view_factor(surface_i, surface_j, debug=debug)
         elif abs(dot_product) == 0.0:  # 隣接面（垂直）
             return self._calculate_perpendicular_view_factor(surface_i, surface_j)
         else:
@@ -244,7 +243,7 @@ class ViewFactorMatrix:
         F12 = (1 / (np.pi * W)) * (term1 + term2)
         return max(0.0, F12)
 
-    def _calculate_parallel_view_factor(self, surface_i: Surface, surface_j: Surface) -> float:
+    def _calculate_parallel_view_factor(self, surface_i: Surface, surface_j: Surface, *, debug: bool = False) -> float:
         """
         平行な長方形面間のビューファクターを計算
 
@@ -285,7 +284,7 @@ class ViewFactorMatrix:
 
         # デバッグ出力
         # debug_flag = load_constants().get("debug", False)
-        if self._debug:
+        if debug:
             print(f"Parallel View Factor Calculation for {surface_i.name}->{surface_j.name}:")
             print(f"  Dimensions: a={a:.3e}m, b={b:.3e}m, d={d:.3e}m")
             print(f"  Normal vectors: ni={surface_i.normal}, nj={surface_j.normal}")
@@ -302,7 +301,7 @@ class ViewFactorMatrix:
         F12 = (2 / (np.pi * X * Y)) * (term1 + term2 + term3 - term4 - term5)
 
         # デバッグ出力（計算過程）
-        if self._debug:
+        if debug:
             print(
                 f"  Terms: term1={term1:.3f}, term2={term2:.3f}, term3={term3:.3f}, term4={term4:.3f}, term5={term5:.3f}"
             )
@@ -343,7 +342,7 @@ class ThermalNode:
         self.components: Dict[str, ComponentProperties] = {}
         self.component_temperatures: Dict[str, float] = {}
 
-    def add_surface(self, surface: Surface):
+    def add_surface(self, surface: Surface, *, debug: bool = False):
         """面を追加し、初期温度を設定"""
         self.surfaces[surface.name] = surface
         self.temperatures[surface.name] = self.initial_temp
@@ -353,7 +352,7 @@ class ThermalNode:
             raise ValueError("`dimensions` should be set!")
             self.dimensions = load_constants()["satellite_dimensions"]
         # 面が追加されたらビューファクター行列を再計算
-        self.view_factor_matrix = ViewFactorMatrix(self.surfaces, self.dimensions)
+        self.view_factor_matrix = ViewFactorMatrix(self.surfaces, self.dimensions, debug=debug)
         # Rijキャッシュもリセット
         self._rij_cache = None
         self._rij_names = None
@@ -373,7 +372,7 @@ class ThermalNode:
             raise ValueError(f"面 {surface_name} は存在しません")
         return self.surfaces[surface_name].calculate_heat_capacity()
 
-    def calculate_interpanel_radiation(self, stefan_boltzmann: float) -> Dict[str, float]:
+    def calculate_interpanel_radiation(self, stefan_boltzmann: float, *, debug: bool = False) -> Dict[str, float]:
         """
         Rij（放射伝達行列）を用いた厳密な熱輻射計算（宇宙放射含む）
         """
@@ -381,7 +380,9 @@ class ThermalNode:
         if self._rij_cache is None or self._rij_names is None:
             from .thermal_utils import calculate_radiative_conductance_matrix
 
-            self._rij_cache, self._rij_names = calculate_radiative_conductance_matrix(self.surfaces, self.dimensions)
+            self._rij_cache, self._rij_names = calculate_radiative_conductance_matrix(
+                self.surfaces, self.dimensions, debug=debug
+            )
         Rij = self._rij_cache
         _node_names = self._rij_names
         n = len(self.surfaces)
@@ -447,7 +448,9 @@ class ThermalNode:
         enable_earth_ir = constants["physical_constants"]["enable_earth_ir"]
 
         # パネル間輻射（Rij法、宇宙放射含む）を一度だけ計算
-        interpanel_radiation = self.calculate_interpanel_radiation(stefan_boltzmann)
+        interpanel_radiation = self.calculate_interpanel_radiation(
+            stefan_boltzmann, debug=constants.get("debug", False)
+        )
 
         # コンダクタンスによる熱伝導を計算
         conductance_heat = self.calculate_conductance_heat()
@@ -627,14 +630,14 @@ class ThermalNode:
             return surface.mli_node.temperature
         return None
 
-    def save_rij_matrix(self, output_dir: str, filename: str = "rij_matrix.csv"):
+    def save_rij_matrix(self, output_dir: str, filename: str = "rij_matrix.csv", *, debug: bool = False):
         """
         Rij（放射伝達行列）をCSVで出力
         行・列ともに面名+SPACEラベル付き
         """
         from .thermal_utils import calculate_radiative_conductance_matrix
 
-        Rij, node_names = calculate_radiative_conductance_matrix(self.surfaces, self.dimensions)
+        Rij, node_names = calculate_radiative_conductance_matrix(self.surfaces, self.dimensions, debug=debug)
         df = pd.DataFrame(Rij, index=node_names, columns=node_names)
         os.makedirs(output_dir, exist_ok=True)
         df.to_csv(os.path.join(output_dir, filename))
@@ -657,7 +660,10 @@ class ThermalNode:
 
 
 def calculate_radiative_conductance_matrix(
-    surfaces: Dict[str, Surface], dimensions: Dict[str, float]
+    surfaces: Dict[str, Surface],
+    dimensions: Dict[str, float],
+    *,
+    debug: bool = False,  # TODO-DEBUG
 ) -> Tuple[np.ndarray, List[str]]:
     """
     6面+宇宙ノードの7x7 Rij（放射伝達行列）を作成する。
@@ -676,7 +682,7 @@ def calculate_radiative_conductance_matrix(
     node_names = surface_names + ["SPACE"]
     Rij = np.zeros((n + 1, n + 1))
 
-    vfm = ViewFactorMatrix(surfaces, dimensions)
+    vfm = ViewFactorMatrix(surfaces, dimensions, debug=debug)
     F = vfm.matrix  # shape=(n, n)
     A = np.array([surfaces[name].area for name in surface_names])
     epsilon_inside = np.array(

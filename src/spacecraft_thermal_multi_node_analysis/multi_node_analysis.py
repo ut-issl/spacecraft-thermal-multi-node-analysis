@@ -106,6 +106,7 @@ def run_earth_orbit_analysis(
         heat_input_records: 熱入力記録
         eclipse_flags: 各時刻で蝕中かどうかのリスト
     """
+    debug = constants.get("debug", False)
     # 軌道パラメータの計算
     period, eclipse_fraction, beta_rad, orbit_normal, e1, e2 = calculate_orbit_parameters(altitude, beta_angle)
     if duration is None:
@@ -128,7 +129,7 @@ def run_earth_orbit_analysis(
 
     # 面の追加と内部発熱の設定
     for surface in create_satellite_surfaces(config, constants):
-        node.add_surface(surface)
+        node.add_surface(surface, debug=debug)
         node.set_internal_heat(surface.name, config.internal_heat[surface.name])
 
     # コンポーネントの追加
@@ -160,7 +161,7 @@ def run_earth_orbit_analysis(
 
         # 姿勢行列を計算
         rotation_matrix = calculate_satellite_attitude(
-            position=position, velocity=velocity, attitude_config=attitude_mode
+            position=position, velocity=velocity, attitude_config=attitude_mode, debug=constants.get("debug", False)
         )
 
         # 太陽方向ベクトル（衛星固定系）
@@ -217,6 +218,7 @@ def run_deep_space_analysis(
         heat_input_records: 熱入力記録
         eclipse_flags: 各時刻で蝕中かどうかのリスト（深宇宙では常にFalse）
     """
+    debug = constants.get("debug", False)
     # 時間ステップの設定
     time_step = constants["analysis_parameters"]["time_step"]
     if duration is None:
@@ -230,7 +232,7 @@ def run_deep_space_analysis(
     )
     # 面の追加と内部発熱の設定
     for surface in create_satellite_surfaces(config, constants):
-        node.add_surface(surface)
+        node.add_surface(surface, debug=debug)
         node.set_internal_heat(surface.name, config.internal_heat[surface.name])
 
     # コンポーネントの追加
@@ -318,6 +320,7 @@ def main():
     args = parser.parse_args()
 
     constants = load_constants(args.settings_dir)
+    debug = constants.get("debug", False)
 
     # 衛星の設定を読み込み
     config = SatelliteConfiguration.from_config_files(args.settings_dir)
@@ -345,7 +348,11 @@ def main():
         copy_settings_files(output_path)
 
         times, temperatures, heat_input_records, eclipse_flags = run_earth_orbit_analysis(
-            config=config, altitude=altitude, beta_angle=beta_angle, duration=duration, constants=constants
+            config=config,
+            altitude=altitude,
+            beta_angle=beta_angle,
+            duration=duration,
+            constants=constants,
         )
 
         # ビューファクター行列（Rij）をCSV出力
@@ -354,11 +361,11 @@ def main():
             dimensions=constants["satellite_dimensions"],
         )
         for surface in create_satellite_surfaces(config, constants):
-            node_for_vf.add_surface(surface)
+            node_for_vf.add_surface(surface, debug=debug)
         vf_csv_path = os.path.join(output_path, "view_factor_matrix.csv")
         node_for_vf.view_factor_matrix.to_csv(vf_csv_path)
         # RijマトリクスもCSV出力
-        node_for_vf.save_rij_matrix(output_path)
+        node_for_vf.save_rij_matrix(output_path, debug=debug)
 
         # 結果のプロットと保存
         plot_temperature_profile(
@@ -370,7 +377,7 @@ def main():
         save_heat_input_data(heat_input_records, output_path)
 
         # 軌道の可視化
-        plot_orbit_visualization(altitude, beta_angle, output_path)
+        plot_orbit_visualization(altitude, beta_angle, output_path, debug=constants.get("debug", False))
 
     else:  # deep_space
         # 深宇宙解析
@@ -404,11 +411,11 @@ def main():
             dimensions=constants["satellite_dimensions"],
         )
         for surface in create_satellite_surfaces(config, constants):
-            node_for_vf.add_surface(surface)
+            node_for_vf.add_surface(surface, debug=debug)
         vf_csv_path = os.path.join(output_path, "view_factor_matrix.csv")
         node_for_vf.view_factor_matrix.to_csv(vf_csv_path)
         # RijマトリクスもCSV出力
-        node_for_vf.save_rij_matrix(output_path)
+        node_for_vf.save_rij_matrix(output_path, debug=debug)
         # 結果のプロットと保存（地球周回と同じ関数を使う）
         plot_temperature_profile(
             times, temperatures, output_path, eclipse_flags, temp_grid_interval=args.temp_grid_interval

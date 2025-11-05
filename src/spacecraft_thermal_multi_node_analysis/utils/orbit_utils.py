@@ -208,7 +208,6 @@ def calculate_satellite_attitude(
     rotation_matrix = np.column_stack([px, py, pz])
 
     # デバッグ
-    # debug_flag = load_constants().get("debug", False)
     if debug:
         print(f"[DEBUG_ATT] PX: {px}, PY: {py}, PZ: {pz}")
         print(
