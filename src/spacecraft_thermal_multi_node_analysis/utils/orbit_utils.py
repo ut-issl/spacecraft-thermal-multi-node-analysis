@@ -1,9 +1,9 @@
-
 import numpy as np
 
 
 def calculate_orbit_parameters(
-    altitude: float, beta_angle: float,
+    altitude: float,
+    beta_angle: float,
 ) -> tuple[float, float, float, np.ndarray, np.ndarray, np.ndarray]:
     """軌道パラメータを計算
 
@@ -97,7 +97,12 @@ def calculate_earth_parameters(altitude: float, time: float, period: float) -> t
 
 
 def calculate_satellite_position(
-    time: float, period: float, altitude: float, orbit_normal: np.ndarray, e1: np.ndarray, e2: np.ndarray,
+    time: float,
+    period: float,
+    altitude: float,
+    orbit_normal: np.ndarray,
+    e1: np.ndarray,
+    e2: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray, bool]:
     """衛星の位置ベクトル・速度ベクトルと蝕の状態を計算
     Returns:
@@ -217,10 +222,12 @@ def calculate_satellite_attitude(
 
 
 def calculate_sun_vector_in_satellite_frame(
-    time: float, period: float, beta_angle: float, rotation_matrix: np.ndarray,
+    time: float,
+    period: float,
+    beta_angle: float,
+    rotation_matrix: np.ndarray,
 ) -> np.ndarray:
-    """衛星固定座標系での太陽方向ベクトルを計算
-    """
+    """衛星固定座標系での太陽方向ベクトルを計算"""
     # 軌道座標系での太陽方向ベクトル（ベータ角90度ならX方向）
     sun_vector_orbit = np.array([1.0, 0.0, 0.0])
     # 姿勢行列の転置で衛星固定座標系へ

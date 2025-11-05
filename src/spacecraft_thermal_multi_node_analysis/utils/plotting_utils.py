@@ -70,14 +70,13 @@ def plot_temperature_profile(
         # コンポーネント名をソートして一貫性のある色割り当てを保証
         sorted_components = sorted(component_names)
         # 利用可能な色を循環して使用
-        return {
-            name: available_colors[i % len(available_colors)]
-            for i, name in enumerate(sorted_components)
-        }
+        return {name: available_colors[i % len(available_colors)] for i, name in enumerate(sorted_components)}
 
     # 共通のプロット設定関数
     def plot_temperature_subplot(
-        temp_dict: dict[str, list[float]], title: str, filename: str
+        temp_dict: dict[str, list[float]],
+        title: str,
+        filename: str,
     ):
         plt.figure(figsize=(10, 6))
 
@@ -88,7 +87,7 @@ def plot_temperature_profile(
 
         if not all_temps:  # 温度データが空の場合のエラー処理
             raise ValueError(
-                f"有効な温度データが見つかりません。{title}の温度データが必要です。"
+                f"有効な温度データが見つかりません。{title}の温度データが必要です。",
             )
 
         min_temp = np.floor(min(all_temps) / temp_grid_interval) * temp_grid_interval
@@ -97,7 +96,7 @@ def plot_temperature_profile(
         # 等温線のグリッドを描画
         plt.grid(True, which="major", axis="y", linestyle="-", alpha=0.3)
         plt.yticks(
-            np.arange(min_temp, max_temp + temp_grid_interval, temp_grid_interval)
+            np.arange(min_temp, max_temp + temp_grid_interval, temp_grid_interval),
         )
 
         # コンポーネントの色を取得
@@ -173,12 +172,16 @@ def plot_temperature_profile(
     all_temps = {**panel_temps, **component_temps}
     if all_temps:
         plot_temperature_subplot(
-            all_temps, "Temperature History of All Elements", "temperature_all.png"
+            all_temps,
+            "Temperature History of All Elements",
+            "temperature_all.png",
         )
 
 
 def save_temperature_data(
-    times: list[float], temperatures: dict[str, list[float]], output_dir: str
+    times: list[float],
+    temperatures: dict[str, list[float]],
+    output_dir: str,
 ):
     """Save temperature data to CSV file
 
@@ -208,9 +211,7 @@ def plot_heat_balance(heat_input_records: list[HeatInputRecord], output_dir: str
     surface_names = sorted({record.surface_name for record in heat_input_records})
     plt.figure(figsize=(12, 6))
     for surface_name in surface_names:
-        surface_records = [
-            r for r in heat_input_records if r.surface_name == surface_name
-        ]
+        surface_records = [r for r in heat_input_records if r.surface_name == surface_name]
         times = [r.time for r in surface_records]
         total_heat = [r.total_heat for r in surface_records]
         plt.plot(times, total_heat, label=surface_name)
@@ -225,15 +226,14 @@ def plot_heat_balance(heat_input_records: list[HeatInputRecord], output_dir: str
 
 
 def plot_heat_input_by_surface(
-    heat_input_records: list[HeatInputRecord], output_dir: str
+    heat_input_records: list[HeatInputRecord],
+    output_dir: str,
 ):
     """Plot and save heat input by surface"""
     surface_names = sorted({record.surface_name for record in heat_input_records})
 
     for surface_name in surface_names:
-        surface_records = [
-            r for r in heat_input_records if r.surface_name == surface_name
-        ]
+        surface_records = [r for r in heat_input_records if r.surface_name == surface_name]
         times = [r.time for r in surface_records]
 
         plt.figure(figsize=(12, 6))
@@ -371,16 +371,14 @@ def plot_orbit_visualization(
 
     # 軌道パラメータの計算
     _, _, _beta_rad, orbit_normal, e1, e2 = calculate_orbit_parameters(
-        altitude, beta_angle
+        altitude,
+        beta_angle,
     )
 
     # 軌道の計算（200点でサンプリング）
     num_points = 200
     theta = np.linspace(0, 2 * np.pi, num_points)
-    r_vecs = (
-        np.outer(np.cos(theta), e1) * orbit_radius
-        + np.outer(np.sin(theta), e2) * orbit_radius
-    )
+    r_vecs = np.outer(np.cos(theta), e1) * orbit_radius + np.outer(np.sin(theta), e2) * orbit_radius
 
     # 太陽方向ベクトル（慣性座標系で固定）
     sun_dir = np.array([1.0, 0.0, 0.0])
