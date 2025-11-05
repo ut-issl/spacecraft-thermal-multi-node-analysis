@@ -155,8 +155,6 @@ class ViewFactorMatrix:
 
     def _calculate_view_factors(self, surfaces: Dict[str, Surface]):
         """各面間のビューファクターを計算"""
-        n = len(self.surface_names)
-
         for i, name_i in enumerate(self.surface_names):
             surface_i = surfaces[name_i]
             for j, name_j in enumerate(self.surface_names):
@@ -380,7 +378,7 @@ class ThermalNode:
 
             self._rij_cache, self._rij_names = calculate_radiative_conductance_matrix(self.surfaces, self.dimensions)
         Rij = self._rij_cache
-        node_names = self._rij_names
+        _node_names = self._rij_names
         n = len(self.surfaces)
         surface_names = list(self.surfaces.keys())
         # 温度配列（面＋宇宙）

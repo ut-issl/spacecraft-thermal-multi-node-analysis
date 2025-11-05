@@ -59,7 +59,7 @@ def calculate_orbit_parameters(
 
     # 蝕の割合の計算
     # 円筒形の地球影モデルを使用
-    shadow_angle = np.arccos(earth_radius / a)
+    _shadow_angle = np.arccos(earth_radius / a)
     if abs(beta_rad) >= np.pi / 2:
         eclipse_fraction = 0.0
     else:
@@ -67,7 +67,7 @@ def calculate_orbit_parameters(
         cos_beta = np.cos(beta_rad)
     # 蝕の割合の計算
     # 円筒形の地球影モデルを使用
-    shadow_angle = np.arccos(earth_radius / a)
+    _shadow_angle = np.arccos(earth_radius / a)
     if abs(beta_rad) >= np.pi / 2:
         eclipse_fraction = 0.0
     else:

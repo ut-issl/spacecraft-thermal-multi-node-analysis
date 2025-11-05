@@ -110,7 +110,7 @@ def run_earth_orbit_analysis(
     # 姿勢制御モードの取得
     attitude_config = load_constants()["satellite_attitude"]
     attitude_mode = attitude_config["earth_orbit_mode"]
-    custom_attitude = attitude_config["custom_attitude"] if "custom" in attitude_mode.values() else None
+    _custom_attitude = attitude_config["custom_attitude"] if "custom" in attitude_mode.values() else None
 
     # 熱ノードの作成
     node = ThermalNode(initial_temp=load_constants()["analysis_parameters"]["initial_temperature"])
