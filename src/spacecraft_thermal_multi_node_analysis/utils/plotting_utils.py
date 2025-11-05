@@ -252,7 +252,9 @@ def plot_heat_input_by_surface(heat_input_records: List[HeatInputRecord], output
         plt.close()
 
 
-def save_heat_input_data(records: List[HeatInputRecord], output_dir: str = None, filename: str = "heat_input_data.csv"):
+def save_heat_input_data(
+    records: List[HeatInputRecord], output_dir: str | None = None, filename: str = "heat_input_data.csv"
+):
     """
     熱入力データをCSVファイルに保存
 

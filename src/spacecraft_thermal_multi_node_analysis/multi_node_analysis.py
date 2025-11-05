@@ -89,7 +89,7 @@ def run_earth_orbit_analysis(
     altitude: float,
     beta_angle: float,
     constants: dict,
-    duration: float = None,
+    duration: float | None = None,
 ) -> Tuple[List[float], Dict[str, List[float]], List[HeatInputRecord], List[bool]]:
     """
     地球周回軌道での熱解析を実行
@@ -136,6 +136,7 @@ def run_earth_orbit_analysis(
         node.add_component(component)
 
     # コンダクタンス行列の設定
+    assert config.conductance_matrix is not None
     node.set_conductance_matrix(config.conductance_matrix, config.enable_conductance)
 
     # 温度履歴の記録
@@ -143,6 +144,7 @@ def run_earth_orbit_analysis(
     # MLIノードの温度も記録
     for surface_name, surface in node.surfaces.items():
         if surface.has_mli:
+            assert surface.mli_node is not None
             temperatures[f"{surface_name}_MLI"] = [surface.mli_node.temperature]
     # コンポーネントの温度も記録
     for component_name in node.components.keys():
@@ -187,7 +189,9 @@ def run_earth_orbit_analysis(
             temperatures[surface_name].append(node.get_temperature(surface_name))
             # MLIノードの温度も記録
             if node.surfaces[surface_name].has_mli:
-                temperatures[f"{surface_name}_MLI"].append(node.surfaces[surface_name].mli_node.temperature)
+                _mli_node = node.surfaces[surface_name].mli_node
+                assert _mli_node is not None
+                temperatures[f"{surface_name}_MLI"].append(_mli_node.temperature)
         # コンポーネントの温度も記録
         for component_name in node.components.keys():
             temperatures[component_name].append(node.get_component_temperature(component_name))
@@ -201,7 +205,7 @@ def run_deep_space_analysis(
     config: SatelliteConfiguration,
     sun_vector: np.ndarray,
     constants: dict,
-    duration: float = None,
+    duration: float | None = None,
 ) -> Tuple[List[float], Dict[str, List[float]], List[HeatInputRecord], List[bool]]:
     """
     深宇宙探査機の非定常熱解析を実行
@@ -239,6 +243,7 @@ def run_deep_space_analysis(
         node.add_component(component)
 
     # コンダクタンス行列の設定
+    assert config.conductance_matrix is not None
     node.set_conductance_matrix(config.conductance_matrix, config.enable_conductance)
 
     # 温度履歴の記録
@@ -246,6 +251,7 @@ def run_deep_space_analysis(
     # MLIノードの温度も記録
     for surface_name, surface in node.surfaces.items():
         if surface.has_mli:
+            assert surface.mli_node is not None
             temperatures[f"{surface_name}_MLI"] = [surface.mli_node.temperature]
     # コンポーネントの温度も記録
     for component_name in node.components.keys():
@@ -262,7 +268,9 @@ def run_deep_space_analysis(
             temperatures[surface_name].append(node.get_temperature(surface_name))
             # MLIノードの温度も記録
             if node.surfaces[surface_name].has_mli:
-                temperatures[f"{surface_name}_MLI"].append(node.surfaces[surface_name].mli_node.temperature)
+                _mli_node = node.surfaces[surface_name].mli_node
+                assert _mli_node is not None
+                temperatures[f"{surface_name}_MLI"].append(_mli_node.temperature)
         # コンポーネントの温度も記録
         for component_name in node.components.keys():
             temperatures[component_name].append(node.get_component_temperature(component_name))

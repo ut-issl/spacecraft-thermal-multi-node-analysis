@@ -37,7 +37,7 @@ class Surface:
     area: float  # m^2
     panel: PanelProperties  # パネルの熱物性
     optical_properties: SurfaceOpticalProperties  # 表面光学特性
-    initial_temp: float = None  # 初期温度 [K]
+    initial_temp: float | None = None  # 初期温度 [K]
     has_mli: bool = False  # MLIが装着されているかどうか
     mli_node: Optional[MLINode] = None  # MLIノード（MLI装着時のみ使用）
 
@@ -357,6 +357,7 @@ class ThermalNode:
         self._rij_cache = None
         self._rij_names = None
         if surface.has_mli:
+            assert surface.mli_node is not None
             # MLIノードの温度も初期化
             surface.mli_node.temperature = self.initial_temp
 
@@ -422,7 +423,7 @@ class ThermalNode:
             for other_name in self.surfaces.keys():
                 if surface_name != other_name:
                     # Cij * (Tj - Ti) の形式で計算
-                    cij = self.conductance_matrix.loc[surface_name, other_name]
+                    cij = float(self.conductance_matrix.loc[surface_name, other_name])
                     temp_diff = self.temperatures[other_name] - self.temperatures[surface_name]
                     heat += cij * temp_diff
             conductance_heat[surface_name] = heat
@@ -433,7 +434,7 @@ class ThermalNode:
         self,
         sun_vector: np.ndarray,
         constants: dict,
-        earth_vector: np.ndarray = None,
+        earth_vector: np.ndarray | None = None,
         in_eclipse: bool = False,
         time: float = 0.0,
         altitude: float = None,
@@ -460,6 +461,8 @@ class ThermalNode:
         # 各面の熱収支を計算
         for surface_name, surface in self.surfaces.items():
             if surface.has_mli:
+                assert surface.mli_node is not None, "surface.mli_node should not be none if surface.has_mli is True."
+
                 # MLIが装着されている場合、外部熱入力はMLIノードに入る
                 solar_heat = surface.calculate_solar_heat(sun_vector, solar_constant, in_eclipse)
                 albedo_heat = 0.0
@@ -577,6 +580,7 @@ class ThermalNode:
                 total_heat_capacity = self.calculate_total_heat_capacity(surface_name)
 
                 if surface.has_mli:
+                    assert surface.mli_node is not None
                     # MLIノードの温度更新（既存のコード）
                     mli_heat_capacity = 1  # 0.1 J/K/m^2
                     mli_temp_change = (

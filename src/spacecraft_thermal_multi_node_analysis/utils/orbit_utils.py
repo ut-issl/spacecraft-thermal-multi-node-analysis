@@ -130,7 +130,7 @@ def calculate_satellite_position(
 def calculate_satellite_attitude(
     position: np.ndarray,
     velocity: np.ndarray,
-    attitude_config: dict = None,
+    attitude_config: dict | None = None,
     *,
     debug: bool = False,
 ) -> np.ndarray:
