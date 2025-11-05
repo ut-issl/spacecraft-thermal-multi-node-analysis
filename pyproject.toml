@@ -26,6 +26,11 @@ dev = [
   "types-pyyaml>=6.0.12.20250915",
 ]
 
+[dependency-groups]
+dev = [
+  "ruff>=0.14.3",
+]
+
 [build-system]
 requires = ["uv_build>=0.9,<0.10"]
 build-backend = "uv_build"
