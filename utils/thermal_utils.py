@@ -205,27 +205,27 @@ class ViewFactorMatrix:
         if abs(ni[0]) == 1 and abs(nj[1]) == 1:  # X面とY面
             w = Ly
             h = Lx
-            l = Lz
+            l = Lz  # noqa: E741
         elif abs(ni[0]) == 1 and abs(nj[2]) == 1:  # X面とZ面
             w = Lz
             h = Lx
-            l = Ly
+            l = Ly  # noqa: E741
         elif abs(ni[1]) == 1 and abs(nj[0]) == 1:  # Y面とX面
             w = Lx
             h = Ly
-            l = Lz
+            l = Lz  # noqa: E741
         elif abs(ni[1]) == 1 and abs(nj[2]) == 1:  # Y面とZ面
             w = Lz
             h = Ly
-            l = Lx
+            l = Lx  # noqa: E741
         elif abs(ni[2]) == 1 and abs(nj[0]) == 1:  # Z面とX面
             w = Lx
             h = Lz
-            l = Ly
+            l = Ly  # noqa: E741
         elif abs(ni[2]) == 1 and abs(nj[1]) == 1:  # Z面とY面
             w = Ly
             h = Lz
-            l = Lx
+            l = Lx  # noqa: E741
         else:
             return 0.0
 
