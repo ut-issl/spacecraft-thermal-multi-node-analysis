@@ -77,7 +77,9 @@ def write_analysis_log(log_file: str, config: Dict, status: str, error_msg: str 
             f.write(f"軌道高度: {config['altitude']} km\n")
             f.write(f"ベータ角: {config['beta']} 度\n")
         else:
-            f.write(f"太陽方向ベクトル: [{config['sun_x']}, {config['sun_y']}, {config['sun_z']}]\n")
+            f.write(
+                f"太陽方向ベクトル: [{config['sun_x']}, {config['sun_y']}, {config['sun_z']}]\n"
+            )
         f.write(f"解析時間: {config['duration']} 秒\n")
         if pd.notna(config.get("num_orbits")):
             f.write(f"周回数: {config['num_orbits']}\n")
@@ -132,7 +134,9 @@ def execute_analysis(config: Dict, log_file: str) -> bool:
     except subprocess.CalledProcessError as e:
         error_msg = f"コマンド実行エラー: {e.stderr}"
         write_analysis_log(log_file, config, "error", error_msg)
-        print(f"エラー: {config['output_dir']} の解析中にエラーが発生しました: {error_msg}")
+        print(
+            f"エラー: {config['output_dir']} の解析中にエラーが発生しました: {error_msg}"
+        )
         return False
 
 
@@ -162,7 +166,9 @@ def main():
     subparsers = parser.add_subparsers(dest="command", help="実行するコマンド")
 
     # 解析設定のテンプレートを作成するコマンド
-    template_parser = subparsers.add_parser("create-template", help="解析設定のテンプレートファイルを作成")
+    template_parser = subparsers.add_parser(
+        "create-template", help="解析設定のテンプレートファイルを作成"
+    )
     template_parser.add_argument(
         "--output-file",
         default="analysis_config_template.csv",

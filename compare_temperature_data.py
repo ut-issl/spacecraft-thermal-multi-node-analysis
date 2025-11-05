@@ -8,7 +8,6 @@ import numpy as np
 import pandas as pd
 
 
-
 def calculate_rmse(diff_df: pd.DataFrame) -> Dict[str, float]:
     """
     各ノードの時間平均RMSEを計算する関数
@@ -28,7 +27,9 @@ def calculate_rmse(diff_df: pd.DataFrame) -> Dict[str, float]:
     return rmse_dict
 
 
-def write_rmse_log(log_file: str, td_file: str, output_file: str, rmse_dict: Dict[str, float]):
+def write_rmse_log(
+    log_file: str, td_file: str, output_file: str, rmse_dict: Dict[str, float]
+):
     """
     RMSEの結果をログファイルに記録する関数
 
@@ -52,7 +53,9 @@ def write_rmse_log(log_file: str, td_file: str, output_file: str, rmse_dict: Dic
         f.write("-" * 50 + "\n")
 
 
-def compare_temperature_data(td_file: str, output_file: str, output_dir: str = "comparison") -> str:
+def compare_temperature_data(
+    td_file: str, output_file: str, output_dir: str = "comparison"
+) -> str:
     """
     温度データを比較し、差分を計算してCSVファイルに出力する関数
 
@@ -99,7 +102,9 @@ def compare_temperature_data(td_file: str, output_file: str, output_dir: str = "
     # 出力ファイル名の生成
     td_filename = Path(td_file).stem
     output_filename = Path(output_file).parent.name
-    output_path = os.path.join(output_dir, f"diff_{td_filename}_vs_{output_filename}.csv")
+    output_path = os.path.join(
+        output_dir, f"diff_{td_filename}_vs_{output_filename}.csv"
+    )
 
     # 差分データの保存
     diff_df.to_csv(output_path, index=False)
@@ -154,10 +159,14 @@ def batch_compare(config_file: str, output_dir: str = "comparison") -> List[str]
     output_paths = []
     for config in configs:
         try:
-            output_path = compare_temperature_data(config["td_file"], config["output_file"], output_dir)
+            output_path = compare_temperature_data(
+                config["td_file"], config["output_file"], output_dir
+            )
             output_paths.append(output_path)
         except Exception as e:
-            print(f"エラー: {config['td_file']} と {config['output_file']} の比較中にエラーが発生しました: {str(e)}")
+            print(
+                f"エラー: {config['td_file']} と {config['output_file']} の比較中にエラーが発生しました: {str(e)}"
+            )
 
     return output_paths
 
@@ -170,31 +179,47 @@ def create_config_template(output_file: str = "comparison_config_template.csv"):
         output_file (str): 出力ファイルのパス
     """
     template_df = pd.DataFrame(
-        {"td_file": ["comparison/test/example.csv"], "output_file": ["output/example/temperature_data.csv"]}
+        {
+            "td_file": ["comparison/test/example.csv"],
+            "output_file": ["output/example/temperature_data.csv"],
+        }
     )
     template_df.to_csv(output_file, index=False)
     print(f"設定テンプレートを作成しました: {output_file}")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="温度データを比較し、差分を計算してCSVファイルに出力します。")
+    parser = argparse.ArgumentParser(
+        description="温度データを比較し、差分を計算してCSVファイルに出力します。"
+    )
     subparsers = parser.add_subparsers(dest="command", help="実行するコマンド")
 
     # 単一の比較を実行するコマンド
     single_parser = subparsers.add_parser("single", help="単一の比較を実行")
     single_parser.add_argument("td_file", help="comparison/td/配下のCSVファイルパス")
-    single_parser.add_argument("output_file", help="output/配下の解析結果フォルダ内のtemperature_data.csvファイルパス")
     single_parser.add_argument(
-        "--output-dir", default="comparison", help="出力先ディレクトリ（デフォルト: comparison）"
+        "output_file",
+        help="output/配下の解析結果フォルダ内のtemperature_data.csvファイルパス",
+    )
+    single_parser.add_argument(
+        "--output-dir",
+        default="comparison",
+        help="出力先ディレクトリ（デフォルト: comparison）",
     )
 
     # 複数の比較を一括実行するコマンド
     batch_parser = subparsers.add_parser("batch", help="複数の比較を一括実行")
     batch_parser.add_argument("config_file", help="比較設定CSVファイルのパス")
-    batch_parser.add_argument("--output-dir", default="comparison", help="出力先ディレクトリ（デフォルト: comparison）")
+    batch_parser.add_argument(
+        "--output-dir",
+        default="comparison",
+        help="出力先ディレクトリ（デフォルト: comparison）",
+    )
 
     # 設定テンプレートを作成するコマンド
-    template_parser = subparsers.add_parser("create-template", help="比較設定のテンプレートファイルを作成")
+    template_parser = subparsers.add_parser(
+        "create-template", help="比較設定のテンプレートファイルを作成"
+    )
     template_parser.add_argument(
         "--output-file",
         default="comparison_config_template.csv",
