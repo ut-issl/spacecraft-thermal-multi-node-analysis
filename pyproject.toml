@@ -10,6 +10,11 @@ dependencies = [
   "pyyaml>=5.4.0",
 ]
 
+[project.scripts]
+batch-analysis = "spacecraft_thermal_multi_node_analysis.batch_analysis:main"
+compare-temperature-data = "spacecraft_thermal_multi_node_analysis.compare_temperature_data:main"
+multi-node-analysis = "spacecraft_thermal_multi_node_analysis.multi_node_analysis:main"
+
 [dependency-groups]
 dev = [
   "ruff>=0.14.3",
