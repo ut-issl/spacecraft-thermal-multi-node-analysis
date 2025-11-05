@@ -127,7 +127,7 @@ def execute_analysis(config: Dict, log_file: str) -> bool:
 
     try:
         # 解析の実行
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        _result = subprocess.run(cmd, check=True, capture_output=True, text=True)
         write_analysis_log(log_file, config, "success")
         print(f"解析が成功しました: {config['output_dir']}")
         return True
