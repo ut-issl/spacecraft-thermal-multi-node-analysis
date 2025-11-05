@@ -1,16 +1,8 @@
-import os
 from typing import Tuple
 
 import numpy as np
-import yaml
 
-
-def load_constants() -> dict:
-    """定数ファイルを読み込む"""
-    with open(
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), "settings", "constants.yaml"), "r", encoding="utf-8"
-    ) as f:
-        return yaml.safe_load(f)
+from .config_loader import load_constants
 
 
 def calculate_orbit_parameters(
