@@ -31,19 +31,19 @@ class SatelliteConfiguration:
     components: Dict[str, ComponentProperties]  # コンポーネントの熱物性値
 
     @classmethod
-    def from_config_files(cls) -> "SatelliteConfiguration":
+    def from_config_files(cls, settings_dir: str) -> "SatelliteConfiguration":
         """設定ファイルから設定を読み込む"""
-        constants = load_constants()
-        surface_materials, surface_optical_assignments = load_surface_properties()
-        material_properties = load_material_properties()
-        panel_material_assignments = load_panel_material_assignments()
-        components = load_component_properties()
+        constants = load_constants(settings_dir)
+        surface_materials, surface_optical_assignments = load_surface_properties(settings_dir)
+        material_properties = load_material_properties(settings_dir)
+        panel_material_assignments = load_panel_material_assignments(settings_dir)
+        components = load_component_properties(settings_dir)
 
         # コンダクタンス行列の有効/無効を取得
         enable_conductance = constants["analysis_parameters"].get("enable_conductance", False)
 
         # コンダクタンスが有効な場合のみ行列を読み込む
-        conductance_matrix = load_conductance_matrix() if enable_conductance else None
+        conductance_matrix = load_conductance_matrix(settings_dir) if enable_conductance else None
 
         # 各面のパネル材料構成を検証
         for surface_name, panel_configs in panel_material_assignments.items():

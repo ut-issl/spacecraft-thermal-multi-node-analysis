@@ -31,7 +31,7 @@ from .utils.thermal_utils import (
 )
 
 
-def create_satellite_surfaces(config: SatelliteConfiguration) -> List[Surface]:
+def create_satellite_surfaces(config: SatelliteConfiguration, constants: dict) -> List[Surface]:
     """衛星の各面を作成"""
     dims = config.dimensions
     surfaces = []
@@ -76,6 +76,8 @@ def create_satellite_surfaces(config: SatelliteConfiguration) -> List[Surface]:
                 area=area * 1e-6,  # mm^2 to m^2
                 panel=PanelProperties(material=panel_material, thickness=panel_thickness),
                 optical_properties=SurfaceOpticalProperties(outside=outside_materials, inside=inside_materials),
+                # 設定ファイルにinitial_temperatureがない場合は293.15K（20℃）をデフォルト値として使用
+                initial_temp=constants.get("initital_temperature", 293.15),
             )
         )
 
@@ -83,7 +85,11 @@ def create_satellite_surfaces(config: SatelliteConfiguration) -> List[Surface]:
 
 
 def run_earth_orbit_analysis(
-    config: SatelliteConfiguration, altitude: float, beta_angle: float, duration: float = None
+    config: SatelliteConfiguration,
+    altitude: float,
+    beta_angle: float,
+    constants: dict,
+    duration: float = None,
 ) -> Tuple[List[float], Dict[str, List[float]], List[HeatInputRecord], List[bool]]:
     """
     地球周回軌道での熱解析を実行
@@ -106,19 +112,22 @@ def run_earth_orbit_analysis(
         duration = period
 
     # 時間ステップの設定
-    time_step = load_constants()["analysis_parameters"]["time_step"]
+    time_step = constants["analysis_parameters"]["time_step"]
     times = np.arange(0, duration, time_step)
 
     # 姿勢制御モードの取得
-    attitude_config = load_constants()["satellite_attitude"]
+    attitude_config = constants["satellite_attitude"]
     attitude_mode = attitude_config["earth_orbit_mode"]
     _custom_attitude = attitude_config["custom_attitude"] if "custom" in attitude_mode.values() else None
 
     # 熱ノードの作成
-    node = ThermalNode(initial_temp=load_constants()["analysis_parameters"]["initial_temperature"])
+    node = ThermalNode(
+        initial_temp=constants["analysis_parameters"]["initial_temperature"],
+        dimensions=constants["satellite_dimensions"],
+    )
 
     # 面の追加と内部発熱の設定
-    for surface in create_satellite_surfaces(config):
+    for surface in create_satellite_surfaces(config, constants):
         node.add_surface(surface)
         node.set_internal_heat(surface.name, config.internal_heat[surface.name])
 
@@ -165,6 +174,7 @@ def run_earth_orbit_analysis(
         heat_balances = node.calculate_heat_balance(
             sun_vector=sun_vector,
             earth_vector=earth_vector,
+            constants=constants,
             in_eclipse=in_eclipse,
             time=t,
             altitude=altitude,
@@ -188,7 +198,10 @@ def run_earth_orbit_analysis(
 
 
 def run_deep_space_analysis(
-    config: SatelliteConfiguration, sun_vector: np.ndarray, duration: float = None
+    config: SatelliteConfiguration,
+    sun_vector: np.ndarray,
+    constants: dict,
+    duration: float = None,
 ) -> Tuple[List[float], Dict[str, List[float]], List[HeatInputRecord], List[bool]]:
     """
     深宇宙探査機の非定常熱解析を実行
@@ -205,15 +218,18 @@ def run_deep_space_analysis(
         eclipse_flags: 各時刻で蝕中かどうかのリスト（深宇宙では常にFalse）
     """
     # 時間ステップの設定
-    time_step = load_constants()["analysis_parameters"]["time_step"]
+    time_step = constants["analysis_parameters"]["time_step"]
     if duration is None:
         duration = 6000.0  # デフォルトで6000秒（例）
     times = np.arange(0, duration, time_step)
 
     # 熱ノードの作成
-    node = ThermalNode(initial_temp=load_constants()["analysis_parameters"]["initial_temperature"])
+    node = ThermalNode(
+        initial_temp=constants["analysis_parameters"]["initial_temperature"],
+        dimensions=constants["satellite_dimensions"],
+    )
     # 面の追加と内部発熱の設定
-    for surface in create_satellite_surfaces(config):
+    for surface in create_satellite_surfaces(config, constants):
         node.add_surface(surface)
         node.set_internal_heat(surface.name, config.internal_heat[surface.name])
 
@@ -239,7 +255,7 @@ def run_deep_space_analysis(
 
     # 時間積分
     for t in times[1:]:
-        heat_balances = node.calculate_heat_balance(sun_vector=sun_vector, time=t)
+        heat_balances = node.calculate_heat_balance(sun_vector=sun_vector, time=t, constants=constants)
         node.update_temperature(heat_balances, time_step)
         for surface_name in node.surfaces.keys():
             temperatures[surface_name].append(node.get_temperature(surface_name))
@@ -287,6 +303,7 @@ def main():
     )
     parser.add_argument("--altitude", type=float, help="軌道高度 [km]")
     parser.add_argument("--beta", type=float, help="ベータ角 [度]")
+    parser.add_argument("--settings_dir", type=str, default="settings", help="設定ディレクトリ")
     parser.add_argument("--output_dir", type=str, default="output", help="出力ディレクトリ")
     parser.add_argument("--sun_x", type=float, help="太陽方向ベクトルX成分（深宇宙モード用）")
     parser.add_argument("--sun_y", type=float, help="太陽方向ベクトルY成分（深宇宙モード用）")
@@ -300,13 +317,15 @@ def main():
     )
     args = parser.parse_args()
 
+    constants = load_constants(args.settings_dir)
+
     # 衛星の設定を読み込み
-    config = SatelliteConfiguration.from_config_files()
+    config = SatelliteConfiguration.from_config_files(args.settings_dir)
 
     if args.mode == "earth":
         # 地球周回軌道解析
-        altitude = args.altitude or load_constants()["orbit_parameters"]["default_altitude"]
-        beta_angle = args.beta or load_constants()["orbit_parameters"]["default_beta"]
+        altitude = args.altitude or constants["orbit_parameters"]["default_altitude"]
+        beta_angle = args.beta or constants["orbit_parameters"]["default_beta"]
 
         # 周回数に応じたdurationを計算
         period, _, _, _, _, _ = calculate_orbit_parameters(altitude, beta_angle)
@@ -326,12 +345,15 @@ def main():
         copy_settings_files(output_path)
 
         times, temperatures, heat_input_records, eclipse_flags = run_earth_orbit_analysis(
-            config=config, altitude=altitude, beta_angle=beta_angle, duration=duration
+            config=config, altitude=altitude, beta_angle=beta_angle, duration=duration, constants=constants
         )
 
         # ビューファクター行列（Rij）をCSV出力
-        node_for_vf = ThermalNode(initial_temp=load_constants()["analysis_parameters"]["initial_temperature"])
-        for surface in create_satellite_surfaces(config):
+        node_for_vf = ThermalNode(
+            initial_temp=constants["analysis_parameters"]["initial_temperature"],
+            dimensions=constants["satellite_dimensions"],
+        )
+        for surface in create_satellite_surfaces(config, constants):
             node_for_vf.add_surface(surface)
         vf_csv_path = os.path.join(output_path, "view_factor_matrix.csv")
         node_for_vf.view_factor_matrix.to_csv(vf_csv_path)
@@ -374,10 +396,14 @@ def main():
             config=config,
             sun_vector=sun_vector_normalized,  # 正規化したベクトルを使用
             duration=duration,
+            constants=constants,
         )
         # ビューファクター行列（Rij）をCSV出力
-        node_for_vf = ThermalNode(initial_temp=load_constants()["analysis_parameters"]["initial_temperature"])
-        for surface in create_satellite_surfaces(config):
+        node_for_vf = ThermalNode(
+            initial_temp=constants["analysis_parameters"]["initial_temperature"],
+            dimensions=constants["satellite_dimensions"],
+        )
+        for surface in create_satellite_surfaces(config, constants):
             node_for_vf.add_surface(surface)
         vf_csv_path = os.path.join(output_path, "view_factor_matrix.csv")
         node_for_vf.view_factor_matrix.to_csv(vf_csv_path)

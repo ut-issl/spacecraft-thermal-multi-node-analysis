@@ -2,8 +2,6 @@ from typing import Tuple
 
 import numpy as np
 
-from .config_loader import load_constants
-
 
 def calculate_orbit_parameters(
     altitude: float, beta_angle: float
@@ -130,7 +128,11 @@ def calculate_satellite_position(
 
 
 def calculate_satellite_attitude(
-    position: np.ndarray, velocity: np.ndarray, attitude_config: dict = None
+    position: np.ndarray,
+    velocity: np.ndarray,
+    attitude_config: dict = None,
+    *,
+    debug: bool = False,
 ) -> np.ndarray:
     """
     LVLH基準で衛星の姿勢行列を構築
@@ -206,8 +208,8 @@ def calculate_satellite_attitude(
     rotation_matrix = np.column_stack([px, py, pz])
 
     # デバッグ
-    debug_flag = load_constants().get("debug", False)
-    if debug_flag:
+    # debug_flag = load_constants().get("debug", False)
+    if debug:
         print(f"[DEBUG_ATT] PX: {px}, PY: {py}, PZ: {pz}")
         print(
             f"[DEBUG_ATT] 直交性: PX・PY={np.dot(px, py):.3e}, PY・PZ={np.dot(py, pz):.3e}, PZ・PX={np.dot(pz, px):.3e}"

@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from .config_loader import load_constants
 from .orbit_utils import calculate_orbit_parameters
 from .thermal_utils import HeatInputRecord
 
@@ -288,7 +287,12 @@ def save_heat_input_data(records: List[HeatInputRecord], output_dir: str = None,
 
 
 def plot_orbit_visualization(
-    altitude: float, beta_angle: float, output_dir: Optional[str] = None, filename: str = "orbit_visualization.png"
+    altitude: float,
+    beta_angle: float,
+    output_dir: Optional[str] = None,
+    filename: str = "orbit_visualization.png",
+    *,
+    debug: bool = False,
 ) -> None:
     """
     Visualize satellite orbit in 3D
@@ -304,8 +308,7 @@ def plot_orbit_visualization(
     earth_radius = 6371.0  # Earth radius [km]
     orbit_radius = earth_radius + altitude
 
-    debug_flag = load_constants().get("debug", False)
-    if debug_flag:
+    if debug:
         print("\n=== Detailed Debug Information ===")
         print("\n[1] Input Parameters")
         print(f"Beta angle: {beta_angle} degrees")
@@ -334,7 +337,7 @@ def plot_orbit_visualization(
     d_perp = np.linalg.norm(perp, axis=1)
     eclipse_mask = (r_dot_s < 0) & (d_perp < earth_radius)
 
-    if debug_flag:
+    if debug:
         print("\n[2] Orbit Analysis")
         print(f"Orbit normal: {orbit_normal}")
         print(f"Basis vector e1: {e1}")

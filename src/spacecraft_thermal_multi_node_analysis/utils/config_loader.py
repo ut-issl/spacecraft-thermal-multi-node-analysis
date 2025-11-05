@@ -1,4 +1,4 @@
-import os
+import os.path
 from typing import Dict, List, Tuple
 
 import numpy as np
@@ -8,18 +8,16 @@ import yaml
 from .dataclasses import ComponentProperties, MaterialProperties, SurfaceMaterial
 
 
-def load_constants() -> dict:
+def load_constants(settings_dir: str) -> dict:
     """定数ファイルを読み込む"""
-    with open(
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), "settings", "constants.yaml"), "r", encoding="utf-8"
-    ) as f:
+    with open(os.path.join(settings_dir, "constants.yaml"), "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
-def load_surface_properties() -> Tuple[Dict[str, SurfaceMaterial], Dict[str, List[Dict[str, float]]]]:
+def load_surface_properties(settings_dir: str) -> Tuple[Dict[str, SurfaceMaterial], Dict[str, List[Dict[str, float]]]]:
     """表面光学特性を読み込む"""
     with open(
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), "settings", "surface_properties.yaml"),
+        os.path.join(settings_dir, "surface_properties.yaml"),
         "r",
         encoding="utf-8",
     ) as f:
@@ -48,10 +46,10 @@ def load_surface_properties() -> Tuple[Dict[str, SurfaceMaterial], Dict[str, Lis
     return surface_materials, data["surface_optical_assignments"]
 
 
-def load_material_properties() -> Dict[str, MaterialProperties]:
+def load_material_properties(settings_dir: str) -> Dict[str, MaterialProperties]:
     """材料物性を読み込む"""
     with open(
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), "settings", "material_properties.yaml"),
+        os.path.join(settings_dir, "material_properties.yaml"),
         "r",
         encoding="utf-8",
     ) as f:
@@ -71,10 +69,10 @@ def load_material_properties() -> Dict[str, MaterialProperties]:
     return material_properties
 
 
-def load_panel_material_assignments() -> Dict[str, List[Dict[str, float]]]:
+def load_panel_material_assignments(settings_dir: str) -> Dict[str, List[Dict[str, float]]]:
     """パネルの材料構成を読み込む"""
     with open(
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), "settings", "material_properties.yaml"),
+        os.path.join(settings_dir, "material_properties.yaml"),
         "r",
         encoding="utf-8",
     ) as f:
@@ -83,14 +81,14 @@ def load_panel_material_assignments() -> Dict[str, List[Dict[str, float]]]:
     return data["panel_material_assignments"]
 
 
-def load_conductance_matrix() -> pd.DataFrame:
+def load_conductance_matrix(settings_dir: str) -> pd.DataFrame:
     """
     パネル間の熱伝導率を定義するコンダクタンス行列を読み込む
 
     Returns:
         pd.DataFrame: コンダクタンス行列（ノード間の熱伝導率 [W/K]）
     """
-    file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "settings", "cij_matrix.csv")
+    file_path = os.path.join(settings_dir, "cij_matrix.csv")
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"コンダクタンス行列の設定ファイルが見つかりません: {file_path}")
 
@@ -112,10 +110,10 @@ def load_conductance_matrix() -> pd.DataFrame:
     return df
 
 
-def load_component_properties() -> Dict[str, ComponentProperties]:
+def load_component_properties(settings_dir: str) -> Dict[str, ComponentProperties]:
     """コンポーネントの熱物性値を読み込む"""
     with open(
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), "settings", "component_properties.yaml"),
+        os.path.join(settings_dir, "component_properties.yaml"),
         "r",
         encoding="utf-8",
     ) as f:

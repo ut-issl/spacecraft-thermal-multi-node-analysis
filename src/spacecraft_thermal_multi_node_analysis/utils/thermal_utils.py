@@ -10,7 +10,6 @@ from .config_loader import (
 )
 from .dataclasses import ComponentProperties, HeatInputRecord, MaterialProperties, MLINode, SurfaceMaterial
 from .orbit_utils import calculate_albedo_view_factor, calculate_earth_ir_view_factor
-from .satellite_config import SatelliteConfiguration
 
 
 @dataclass
@@ -46,6 +45,8 @@ class Surface:
         """MLIの有無を判定し、MLIノードを初期化"""
         # 初期温度が設定されていない場合は設定ファイルから読み込む
         if self.initial_temp is None:
+            # We don't want to read from files here.
+            raise ValueError("`initial_temp` should be set!")
             constants = load_constants()
             # 設定ファイルにinitial_temperatureがない場合は293.15K（20℃）をデフォルト値として使用
             self.initial_temp = constants.get("initial_temperature", 293.15)
@@ -140,19 +141,20 @@ class Surface:
         return albedo_heat, earth_ir_heat
 
 
-@dataclass
+# @dataclass <- ?
 class ViewFactorMatrix:
     """パネル間のビューファクター行列を管理するクラス"""
 
-    matrix: np.ndarray  # ビューファクター行列
-    surface_names: List[str]  # 面の名前リスト
-    dimensions: Dict[str, float]  # 衛星の寸法
+    # matrix: np.ndarray  # ビューファクター行列
+    # surface_names: List[str]  # 面の名前リスト
+    # dimensions: Dict[str, float]  # 衛星の寸法
 
-    def __init__(self, surfaces: Dict[str, Surface], dimensions: Dict[str, float]):
+    def __init__(self, surfaces: Dict[str, Surface], dimensions: Dict[str, float], *, debug: bool = False):
         self.surface_names = list(surfaces.keys())
         self.dimensions = dimensions
         n = len(self.surface_names)
         self.matrix = np.zeros((n, n))
+        self._debug: bool = debug
         self._calculate_view_factors(surfaces)
 
     def _calculate_view_factors(self, surfaces: Dict[str, Surface]):
@@ -282,8 +284,8 @@ class ViewFactorMatrix:
         Y = b / d
 
         # デバッグ出力
-        debug_flag = load_constants().get("debug", False)
-        if debug_flag:
+        # debug_flag = load_constants().get("debug", False)
+        if self._debug:
             print(f"Parallel View Factor Calculation for {surface_i.name}->{surface_j.name}:")
             print(f"  Dimensions: a={a:.3e}m, b={b:.3e}m, d={d:.3e}m")
             print(f"  Normal vectors: ni={surface_i.normal}, nj={surface_j.normal}")
@@ -300,7 +302,7 @@ class ViewFactorMatrix:
         F12 = (2 / (np.pi * X * Y)) * (term1 + term2 + term3 - term4 - term5)
 
         # デバッグ出力（計算過程）
-        if debug_flag:
+        if self._debug:
             print(
                 f"  Terms: term1={term1:.3f}, term2={term2:.3f}, term3={term3:.3f}, term4={term4:.3f}, term5={term5:.3f}"
             )
@@ -323,15 +325,15 @@ class ViewFactorMatrix:
         df.to_csv(filepath)
 
 
-@dataclass
+# @dataclass <- ?
 class ThermalNode:
-    def __init__(self, initial_temp: float):
+    def __init__(self, initial_temp: float, dimensions: dict[str, float]):
         self.surfaces: Dict[str, Surface] = {}
         self.temperatures: Dict[str, float] = {}
         self.heat_input_records: List[HeatInputRecord] = []
         self.internal_heat: Dict[str, float] = {}
         self.view_factor_matrix: Optional[ViewFactorMatrix] = None
-        self.dimensions: Dict[str, float] = {}
+        self.dimensions: Dict[str, float] = dimensions
         self._rij_cache = None
         self._rij_names = None
         self.initial_temp = initial_temp
@@ -348,6 +350,7 @@ class ThermalNode:
         self.internal_heat[surface.name] = 0.0
         # 衛星の寸法を取得
         if not self.dimensions:
+            raise ValueError("`dimensions` should be set!")
             self.dimensions = load_constants()["satellite_dimensions"]
         # 面が追加されたらビューファクター行列を再計算
         self.view_factor_matrix = ViewFactorMatrix(self.surfaces, self.dimensions)
@@ -428,6 +431,7 @@ class ThermalNode:
     def calculate_heat_balance(
         self,
         sun_vector: np.ndarray,
+        constants: dict,
         earth_vector: np.ndarray = None,
         in_eclipse: bool = False,
         time: float = 0.0,
@@ -435,7 +439,6 @@ class ThermalNode:
         orbit_normal: np.ndarray = None,
     ) -> Dict[str, float]:
         """各面の熱収支を計算（パネル間輻射をRijで最適化）"""
-        constants = load_constants()
         solar_constant = constants["physical_constants"]["solar_constant"]
         stefan_boltzmann = constants["physical_constants"]["stefan_boltzmann"]
         earth_albedo = constants["physical_constants"]["earth_albedo"]
