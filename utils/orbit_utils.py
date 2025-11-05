@@ -4,19 +4,25 @@ import yaml
 import os
 import math
 
+
 def load_constants() -> dict:
     """定数ファイルを読み込む"""
-    with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'settings', 'constants.yaml'), 'r', encoding='utf-8') as f:
+    with open(
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "settings", "constants.yaml"), "r", encoding="utf-8"
+    ) as f:
         return yaml.safe_load(f)
 
-def calculate_orbit_parameters(altitude: float, beta_angle: float) -> Tuple[float, float, float, np.ndarray, np.ndarray, np.ndarray]:
+
+def calculate_orbit_parameters(
+    altitude: float, beta_angle: float
+) -> Tuple[float, float, float, np.ndarray, np.ndarray, np.ndarray]:
     """
     軌道パラメータを計算
-    
+
     Args:
         altitude: 軌道高度 [km]
         beta_angle: ベータ角 [度]
-    
+
     Returns:
         period: 軌道周期 [秒]
         eclipse_fraction: 蝕の割合
@@ -27,21 +33,21 @@ def calculate_orbit_parameters(altitude: float, beta_angle: float) -> Tuple[floa
     """
     earth_radius = 6378.0  # 地球半径 [km]
     mu = 3.986e5  # 地球の重力定数 [km^3/s^2]
-    
+
     # 軌道周期の計算
     a = earth_radius + altitude  # 軌道長半径 [km]
     period = 2 * np.pi * np.sqrt(a**3 / mu)  # 軌道周期 [秒]
-    
+
     # ベータ角をラジアンに変換
     beta_rad = np.radians(beta_angle)
-    
+
     # 太陽方向ベクトル（慣性座標系で固定）
     sun_dir = np.array([1.0, 0.0, 0.0])
     s_hat = sun_dir / np.linalg.norm(sun_dir)
-    
+
     # 軌道面の法線ベクトル（ベータ角に基づいて回転）
     orbit_normal = np.array([np.sin(beta_rad), 0.0, np.cos(beta_rad)])
-    
+
     # 軌道面内の基底ベクトルを計算
     if np.isclose(abs(np.dot(s_hat, orbit_normal)), 1.0):
         # 軌道面が太陽方向に垂直な場合
@@ -51,11 +57,11 @@ def calculate_orbit_parameters(altitude: float, beta_angle: float) -> Tuple[floa
         e1 = s_hat - np.dot(s_hat, orbit_normal) * orbit_normal
         e1 = e1 / np.linalg.norm(e1)
     e2 = np.cross(orbit_normal, e1)
-    
+
     # 蝕の割合の計算
     # 円筒形の地球影モデルを使用
     shadow_angle = np.arccos(earth_radius / a)
-    if abs(beta_rad) >= np.pi/2:
+    if abs(beta_rad) >= np.pi / 2:
         eclipse_fraction = 0.0
     else:
         # 軌道面内での太陽方向と衛星位置の角度を計算
@@ -63,44 +69,47 @@ def calculate_orbit_parameters(altitude: float, beta_angle: float) -> Tuple[floa
     # 蝕の割合の計算
     # 円筒形の地球影モデルを使用
     shadow_angle = np.arccos(earth_radius / a)
-    if abs(beta_rad) >= np.pi/2:
+    if abs(beta_rad) >= np.pi / 2:
         eclipse_fraction = 0.0
     else:
         # 軌道面内での太陽方向と衛星位置の角度を計算
         cos_beta = np.cos(beta_rad)
         # arccosの引数を[-1, 1]の範囲に制限
-        arg = np.clip(np.sqrt(1 - (earth_radius/a)**2) / cos_beta, -1.0, 1.0)
+        arg = np.clip(np.sqrt(1 - (earth_radius / a) ** 2) / cos_beta, -1.0, 1.0)
         eclipse_fraction = np.arccos(arg) / np.pi
 
     return period, eclipse_fraction, beta_rad, orbit_normal, e1, e2
 
+
 def calculate_earth_parameters(altitude: float, time: float, period: float) -> Tuple[np.ndarray, float]:
     """
     地球の位置とビューファクターを計算
-    
+
     Args:
         altitude: 軌道高度 [km]
         time: 経過時間 [秒]
         period: 軌道周期 [秒]
-    
+
     Returns:
         earth_vector: 地球方向ベクトル
         view_factor: 地球のビューファクター
     """
     earth_radius = 6378.0  # 地球半径 [km]
     a = earth_radius + altitude  # 軌道長半径 [km]
-    
+
     # 地球方向ベクトルの計算
     theta = 2 * np.pi * time / period
     earth_vector = np.array([-np.cos(theta), 0, -np.sin(theta)])
-    
+
     # ビューファクターの計算
-    view_factor = (earth_radius / a)**2
-    
+    view_factor = (earth_radius / a) ** 2
+
     return earth_vector, view_factor
 
-def calculate_satellite_position(time: float, period: float, altitude: float, 
-                               orbit_normal: np.ndarray, e1: np.ndarray, e2: np.ndarray) -> Tuple[np.ndarray, np.ndarray, bool]:
+
+def calculate_satellite_position(
+    time: float, period: float, altitude: float, orbit_normal: np.ndarray, e1: np.ndarray, e2: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray, bool]:
     """
     衛星の位置ベクトル・速度ベクトルと蝕の状態を計算
     Returns:
@@ -127,16 +136,18 @@ def calculate_satellite_position(time: float, period: float, altitude: float,
     in_eclipse = (r_dot_s < 0) & (d_perp < earth_radius)
     return r_vec, v_vec, in_eclipse
 
-def calculate_satellite_attitude(position: np.ndarray, velocity: np.ndarray, 
-                               attitude_config: dict = None) -> np.ndarray:
+
+def calculate_satellite_attitude(
+    position: np.ndarray, velocity: np.ndarray, attitude_config: dict = None
+) -> np.ndarray:
     """
     LVLH基準で衛星の姿勢行列を構築
-    
+
     Args:
         position: 衛星の位置ベクトル
         velocity: 衛星の速度ベクトル
         attitude_config: 姿勢制御の設定（Noneの場合はデフォルトのLVLH姿勢）
-    
+
     Returns:
         rotation_matrix: 姿勢行列
     """
@@ -145,10 +156,10 @@ def calculate_satellite_attitude(position: np.ndarray, velocity: np.ndarray,
     orbit_normal = np.cross(position, velocity)  # 軌道面法線
     orbit_normal = orbit_normal / np.linalg.norm(orbit_normal)
     velocity_dir = velocity / np.linalg.norm(velocity)  # 進行方向
-    
+
     # 太陽方向ベクトル（慣性座標系で固定）
     sun_dir = np.array([1.0, 0.0, 0.0])
-    
+
     if attitude_config is None:
         # デフォルトのLVLH姿勢
         pz = nadir
@@ -156,10 +167,10 @@ def calculate_satellite_attitude(position: np.ndarray, velocity: np.ndarray,
         px = np.cross(py, pz)
     else:
         # 設定に基づいて姿勢を決定
-        primary_mode = attitude_config['primary_axis']
-        secondary_mode = attitude_config['secondary_axis']['direction']
-        secondary_axis = attitude_config['secondary_axis']['axis']
-        
+        primary_mode = attitude_config["primary_axis"]
+        secondary_mode = attitude_config["secondary_axis"]["direction"]
+        secondary_axis = attitude_config["secondary_axis"]["axis"]
+
         # 第1軸（PZ）の向きを決定
         if primary_mode == "sun_pointing":
             pz = sun_dir
@@ -169,7 +180,7 @@ def calculate_satellite_attitude(position: np.ndarray, velocity: np.ndarray,
             pz = velocity_dir
         else:  # custom
             pz = nadir  # デフォルトはnadir
-        
+
         # 第2軸の向きを決定
         if secondary_mode == "nadir_pointing":
             secondary_dir = nadir
@@ -181,11 +192,11 @@ def calculate_satellite_attitude(position: np.ndarray, velocity: np.ndarray,
             secondary_dir = orbit_normal
         else:  # custom
             secondary_dir = orbit_normal  # デフォルトはorbit_normal
-        
+
         # 第2軸を第1軸に直交するように調整
         secondary_dir = secondary_dir - np.dot(secondary_dir, pz) * pz
         secondary_dir = secondary_dir / np.linalg.norm(secondary_dir)
-        
+
         # 第2軸を指定された軸（PXまたはPY）に割り当て
         if secondary_axis == "PX":
             px = secondary_dir
@@ -193,29 +204,29 @@ def calculate_satellite_attitude(position: np.ndarray, velocity: np.ndarray,
         else:  # PY
             py = secondary_dir
             px = np.cross(py, pz)
-    
+
     # 正規化
     px = px / np.linalg.norm(px)
     py = py / np.linalg.norm(py)
     pz = pz / np.linalg.norm(pz)
-    
+
     # 姿勢行列を構築
     rotation_matrix = np.column_stack([px, py, pz])
-    
+
     # デバッグ
-    debug_flag = load_constants().get('debug', False)
+    debug_flag = load_constants().get("debug", False)
     if debug_flag:
         print(f"[DEBUG_ATT] PX: {px}, PY: {py}, PZ: {pz}")
-        print(f"[DEBUG_ATT] 直交性: PX・PY={np.dot(px,py):.3e}, PY・PZ={np.dot(py,pz):.3e}, PZ・PX={np.dot(pz,px):.3e}")
+        print(
+            f"[DEBUG_ATT] 直交性: PX・PY={np.dot(px, py):.3e}, PY・PZ={np.dot(py, pz):.3e}, PZ・PX={np.dot(pz, px):.3e}"
+        )
         print(f"[DEBUG_ATT] det(R): {np.linalg.det(rotation_matrix):.6f}")
-    
+
     return rotation_matrix
 
+
 def calculate_sun_vector_in_satellite_frame(
-    time: float,
-    period: float,
-    beta_angle: float,
-    rotation_matrix: np.ndarray
+    time: float, period: float, beta_angle: float, rotation_matrix: np.ndarray
 ) -> np.ndarray:
     """
     衛星固定座標系での太陽方向ベクトルを計算
@@ -226,75 +237,85 @@ def calculate_sun_vector_in_satellite_frame(
     sun_vector = rotation_matrix.T @ sun_vector_orbit
     return sun_vector / np.linalg.norm(sun_vector)
 
+
 def calculate_earth_ir_view_factor(earth_vector: np.ndarray, normal_vector: np.ndarray, altitude: float) -> float:
     """
     地球赤外用のビューファクターを計算
-    
+
     Args:
         earth_vector: 地球方向ベクトル（正規化されていない）
         normal_vector: 面の法線ベクトル
         altitude: 軌道高度 [km]
-    
+
     Returns:
         view_factor: 地球赤外用のビューファクター
     """
     earth_radius = 6378.0  # 地球半径 [km]
-    
+
     # 地球方向ベクトルを正規化
     earth_direction = earth_vector
-    
+
     # パラメータの計算
     lamda = np.arccos(np.clip(np.dot(earth_direction, normal_vector), -1.0, 1.0))
     h = altitude  # 高度 [km]
     H = (earth_radius + h) / earth_radius
     phi_m = np.arcsin(1.0 / H)
     b = np.sqrt(H * H - 1.0)
-    
+
     # ビューファクターの計算
     # ref) POWER INPUT TO A SMALL FLAT PLATE FROM A DIFFUSELY RADIATING SPHERE WITH APPLICATION TO EARTH SATELLITES: THE SPINNING PLATE
     if h < 1732.0:  # 1732 km未満の場合
-        if lamda <= np.pi/2.0 - phi_m:
+        if lamda <= np.pi / 2.0 - phi_m:
             view_factor = np.cos(lamda) / (H * H)
-        elif lamda <= np.pi/2.0 + phi_m:
-            view_factor = (0.5 - 
-                          (1.0/np.pi) * np.arcsin(b/(H * np.sin(lamda))) +
-                          (1.0/(np.pi * H * H)) * (np.cos(lamda) * np.arccos(-b/np.tan(lamda)) - 
-                                                  b * np.sqrt(1.0 - (H * np.cos(lamda))**2)))
+        elif lamda <= np.pi / 2.0 + phi_m:
+            view_factor = (
+                0.5
+                - (1.0 / np.pi) * np.arcsin(b / (H * np.sin(lamda)))
+                + (1.0 / (np.pi * H * H))
+                * (np.cos(lamda) * np.arccos(-b / np.tan(lamda)) - b * np.sqrt(1.0 - (H * np.cos(lamda)) ** 2))
+            )
         else:
             view_factor = 0.0
     else:  # 1732 km以上の場合
-        if lamda < np.pi/2.0:
+        if lamda < np.pi / 2.0:
             # 立体角として考慮
             view_factor = 0.25 / (H * H)
         else:
             view_factor = 0.0
-    
+
     return view_factor
 
-def calculate_albedo_view_factor(earth_vector: np.ndarray, sun_vector: np.ndarray, normal_vector: np.ndarray, altitude: float, orbit_normal: np.ndarray) -> float:
+
+def calculate_albedo_view_factor(
+    earth_vector: np.ndarray,
+    sun_vector: np.ndarray,
+    normal_vector: np.ndarray,
+    altitude: float,
+    orbit_normal: np.ndarray,
+) -> float:
     """
     アルベド用のビューファクターを計算
-    
+
     Args:
         earth_vector: 地球方向ベクトル（正規化されていない）
         sun_vector: 太陽方向ベクトル（正規化済み）
         normal_vector: 面の法線ベクトル
         altitude: 軌道高度 [km]
         orbit_normal: 軌道面の法線ベクトル（同一座標系）
-    
+
     Returns:
         view_factor: アルベド用のビューファクター
     """
     earth_radius = 6378.0  # 地球半径 [km]
-    
+
     # 地球方向ベクトルを正規化
     earth_direction = earth_vector
-    
+
     # 太陽と地球の方向ベクトルから反射方向を計算
     vec_a = -earth_direction
-    vec_b = (sun_vector - earth_direction)
+    vec_b = sun_vector - earth_direction
     vec_b = vec_b / np.linalg.norm(vec_b)
-    
+
     # パラメータの計算
     cos_theta = np.dot(vec_a, vec_b)
     lamda = np.arccos(np.clip(np.dot(earth_direction, normal_vector), -1.0, 1.0))
@@ -302,30 +323,32 @@ def calculate_albedo_view_factor(earth_vector: np.ndarray, sun_vector: np.ndarra
     H = (earth_radius + h) / earth_radius
     phi_m = np.arcsin(1.0 / H)
     b = np.sqrt(H * H - 1.0)
-    
+
     # 軌道面の法線ベクトルを参照可能
     # 例: beta_angle = np.arccos(np.clip(np.dot(orbit_normal, sun_vector), -1.0, 1.0))
     # 必要に応じてこの中で利用可能
-    
+
     # ビューファクターの計算
     # ref) POWER INPUT TO A SMALL FLAT PLATE FROM A DIFFUSELY RADIATING SPHERE WITH APPLICATION TO EARTH SATELLITES: THE SPINNING PLATE
     if h < 1732.0:  # 1732 km未満の場合
-        if lamda <= np.pi/2.0 - phi_m:
+        if lamda <= np.pi / 2.0 - phi_m:
             view_factor = np.cos(lamda) / (H * H)
-        elif lamda <= np.pi/2.0 + phi_m:
-            view_factor = (0.5 - 
-                          (1.0/np.pi) * np.arcsin(b/(H * np.sin(lamda))) +
-                          (1.0/(np.pi * H * H)) * (np.cos(lamda) * np.arccos(-b/np.tan(lamda)) - 
-                                                  b * np.sqrt(1.0 - (H * np.cos(lamda))**2)))
+        elif lamda <= np.pi / 2.0 + phi_m:
+            view_factor = (
+                0.5
+                - (1.0 / np.pi) * np.arcsin(b / (H * np.sin(lamda)))
+                + (1.0 / (np.pi * H * H))
+                * (np.cos(lamda) * np.arccos(-b / np.tan(lamda)) - b * np.sqrt(1.0 - (H * np.cos(lamda)) ** 2))
+            )
         else:
             view_factor = 0.0
     else:  # 1732 km以上の場合
-        if lamda < np.pi/2.0:
+        if lamda < np.pi / 2.0:
             # 立体角として考慮
             view_factor = 0.25 / (H * H)
         else:
             view_factor = 0.0
-    
+
     # β角の計算（ラジアン）
     beta_angle = np.arccos(np.clip(np.dot(orbit_normal, sun_vector), -1.0, 1.0))
     # β角の計算（度）
@@ -341,5 +364,5 @@ def calculate_albedo_view_factor(earth_vector: np.ndarray, sun_vector: np.ndarra
             view_factor *= np.power(cos_theta, 5.0)
     else:
         view_factor = 0.0
-    
-    return view_factor 
+
+    return view_factor
