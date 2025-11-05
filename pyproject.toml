@@ -1,5 +1,5 @@
 [project]
-name = "multi-node-analysis"
+name = "spacecraft-thermal-multi-node-analysis"
 version = "1.0.0"
 description = "衛星の多節点熱解析プログラム"
 requires-python = ">=3.12"
