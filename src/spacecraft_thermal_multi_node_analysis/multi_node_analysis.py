@@ -126,7 +126,6 @@ def run_earth_orbit_analysis(
         initial_temp=constants["analysis_parameters"]["initial_temperature"],
         dimensions=constants["satellite_dimensions"],
     )
-
     # 面の追加と内部発熱の設定
     for surface in create_satellite_surfaces(config, constants):
         node.add_surface(surface, debug=debug)
