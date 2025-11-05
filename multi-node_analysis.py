@@ -3,23 +3,18 @@ import numpy as np
 import os
 import argparse
 import shutil
-from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple
 from utils.thermal_utils import (
     ThermalNode,
     Surface,
     PanelProperties,
     SurfaceOpticalProperties,
-    load_surface_properties,
-    load_material_properties,
-    load_panel_material_assignments,
     load_constants,
     HeatInputRecord,
 )
 from utils.satellite_config import SatelliteConfiguration
 from utils.orbit_utils import (
     calculate_orbit_parameters,
-    calculate_earth_parameters,
     calculate_satellite_attitude,
     calculate_sun_vector_in_satellite_frame,
     calculate_satellite_position,

@@ -2,7 +2,7 @@ import pandas as pd
 import os
 import argparse
 from pathlib import Path
-from typing import List, Dict, Tuple
+from typing import List, Dict
 import numpy as np
 from datetime import datetime
 

@@ -305,7 +305,7 @@ def plot_orbit_visualization(
     debug_flag = load_constants().get("debug", False)
     if debug_flag:
         print("\n=== Detailed Debug Information ===")
-        print(f"\n[1] Input Parameters")
+        print("\n[1] Input Parameters")
         print(f"Beta angle: {beta_angle} degrees")
         print(f"Orbit radius: {orbit_radius} km")
         print(f"Earth radius: {earth_radius} km")
@@ -333,7 +333,7 @@ def plot_orbit_visualization(
     eclipse_mask = (r_dot_s < 0) & (d_perp < earth_radius)
 
     if debug_flag:
-        print(f"\n[2] Orbit Analysis")
+        print("\n[2] Orbit Analysis")
         print(f"Orbit normal: {orbit_normal}")
         print(f"Basis vector e1: {e1}")
         print(f"Basis vector e2: {e2}")
@@ -342,7 +342,7 @@ def plot_orbit_visualization(
             f"Angle between sun and orbit normal: {np.degrees(np.arccos(np.clip(np.dot(orbit_normal, s_hat), -1.0, 1.0))):.2f} degrees"
         )
 
-        print(f"\n[3] Eclipse Statistics")
+        print("\n[3] Eclipse Statistics")
         print(f"Total points: {len(eclipse_mask)}")
         print(f"Eclipse points: {np.sum(eclipse_mask)}")
         print(f"Eclipse fraction: {np.sum(eclipse_mask) / len(eclipse_mask):.2%}")

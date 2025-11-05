@@ -6,9 +6,6 @@ from .dataclasses import MaterialProperties, SurfaceMaterial, HeatInputRecord, M
 from .satellite_config import SatelliteConfiguration
 from .config_loader import (
     load_constants,
-    load_surface_properties,
-    load_material_properties,
-    load_panel_material_assignments,
 )
 import pandas as pd
 from .orbit_utils import calculate_earth_ir_view_factor, calculate_albedo_view_factor
@@ -58,11 +55,11 @@ class Surface:
                 # MLIの放射率と実効放射率を取得
                 if optical_props.epsilon is None:
                     raise ValueError(
-                        f"MLIの放射率が設定されていません。surface_properties.yamlでMLIのepsilonを設定してください。"
+                        "MLIの放射率が設定されていません。surface_properties.yamlでMLIのepsilonを設定してください。"
                     )
                 if optical_props.effective_emissivity is None:
                     raise ValueError(
-                        f"MLIの実効放射率が設定されていません。surface_properties.yamlでMLIのeffective_emissivityを設定してください。"
+                        "MLIの実効放射率が設定されていません。surface_properties.yamlでMLIのeffective_emissivityを設定してください。"
                     )
 
                 self.mli_node = MLINode(

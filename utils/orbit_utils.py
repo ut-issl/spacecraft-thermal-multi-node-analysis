@@ -1,8 +1,7 @@
 import numpy as np
-from typing import Tuple, List, Dict, Union
+from typing import Tuple
 import yaml
 import os
-import math
 
 
 def load_constants() -> dict:
