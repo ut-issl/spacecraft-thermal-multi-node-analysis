@@ -101,7 +101,7 @@ def execute_analysis(config: Dict, log_file: str) -> bool:
         bool: 実行が成功したかどうか
     """
     # コマンドライン引数の構築
-    cmd = ["python", "multi-node_analysis.py"]
+    cmd = ["multi-node-analysis"]
 
     # モードに応じた引数の設定
     cmd.extend(["--mode", config["mode"]])
