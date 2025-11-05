@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 
 
+
 def calculate_rmse(diff_df: pd.DataFrame) -> Dict[str, float]:
     """
     各ノードの時間平均RMSEを計算する関数

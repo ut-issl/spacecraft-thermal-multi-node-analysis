@@ -8,6 +8,7 @@ import yaml
 from .dataclasses import ComponentProperties, MaterialProperties, SurfaceMaterial
 
 
+
 def load_constants() -> dict:
     """定数ファイルを読み込む"""
     with open(

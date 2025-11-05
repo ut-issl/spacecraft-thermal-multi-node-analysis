@@ -8,7 +8,11 @@ import yaml
 def load_constants() -> dict:
     """定数ファイルを読み込む"""
     with open(
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), "settings", "constants.yaml"), "r", encoding="utf-8"
+        os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "settings", "constants.yaml"
+        ),
+        "r",
+        encoding="utf-8",
     ) as f:
         return yaml.safe_load(f)
 
@@ -81,7 +85,9 @@ def calculate_orbit_parameters(
     return period, eclipse_fraction, beta_rad, orbit_normal, e1, e2
 
 
-def calculate_earth_parameters(altitude: float, time: float, period: float) -> Tuple[np.ndarray, float]:
+def calculate_earth_parameters(
+    altitude: float, time: float, period: float
+) -> Tuple[np.ndarray, float]:
     """
     地球の位置とビューファクターを計算
 
@@ -108,7 +114,12 @@ def calculate_earth_parameters(altitude: float, time: float, period: float) -> T
 
 
 def calculate_satellite_position(
-    time: float, period: float, altitude: float, orbit_normal: np.ndarray, e1: np.ndarray, e2: np.ndarray
+    time: float,
+    period: float,
+    altitude: float,
+    orbit_normal: np.ndarray,
+    e1: np.ndarray,
+    e2: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray, bool]:
     """
     衛星の位置ベクトル・速度ベクトルと蝕の状態を計算
@@ -238,7 +249,9 @@ def calculate_sun_vector_in_satellite_frame(
     return sun_vector / np.linalg.norm(sun_vector)
 
 
-def calculate_earth_ir_view_factor(earth_vector: np.ndarray, normal_vector: np.ndarray, altitude: float) -> float:
+def calculate_earth_ir_view_factor(
+    earth_vector: np.ndarray, normal_vector: np.ndarray, altitude: float
+) -> float:
     """
     地球赤外用のビューファクターを計算
 
@@ -272,7 +285,10 @@ def calculate_earth_ir_view_factor(earth_vector: np.ndarray, normal_vector: np.n
                 0.5
                 - (1.0 / np.pi) * np.arcsin(b / (H * np.sin(lamda)))
                 + (1.0 / (np.pi * H * H))
-                * (np.cos(lamda) * np.arccos(-b / np.tan(lamda)) - b * np.sqrt(1.0 - (H * np.cos(lamda)) ** 2))
+                * (
+                    np.cos(lamda) * np.arccos(-b / np.tan(lamda))
+                    - b * np.sqrt(1.0 - (H * np.cos(lamda)) ** 2)
+                )
             )
         else:
             view_factor = 0.0
@@ -338,7 +354,10 @@ def calculate_albedo_view_factor(
                 0.5
                 - (1.0 / np.pi) * np.arcsin(b / (H * np.sin(lamda)))
                 + (1.0 / (np.pi * H * H))
-                * (np.cos(lamda) * np.arccos(-b / np.tan(lamda)) - b * np.sqrt(1.0 - (H * np.cos(lamda)) ** 2))
+                * (
+                    np.cos(lamda) * np.arccos(-b / np.tan(lamda))
+                    - b * np.sqrt(1.0 - (H * np.cos(lamda)) ** 2)
+                )
             )
         else:
             view_factor = 0.0

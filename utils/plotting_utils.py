@@ -72,10 +72,15 @@ def plot_temperature_profile(
         # コンポーネント名をソートして一貫性のある色割り当てを保証
         sorted_components = sorted(component_names)
         # 利用可能な色を循環して使用
-        return {name: available_colors[i % len(available_colors)] for i, name in enumerate(sorted_components)}
+        return {
+            name: available_colors[i % len(available_colors)]
+            for i, name in enumerate(sorted_components)
+        }
 
     # 共通のプロット設定関数
-    def plot_temperature_subplot(temp_dict: Dict[str, List[float]], title: str, filename: str):
+    def plot_temperature_subplot(
+        temp_dict: Dict[str, List[float]], title: str, filename: str
+    ):
         plt.figure(figsize=(10, 6))
 
         # 温度の範囲を取得（ケルビンから摂氏に変換）
@@ -84,21 +89,30 @@ def plot_temperature_profile(
             all_temps.extend([temp - 273.15 for temp in temp_history])
 
         if not all_temps:  # 温度データが空の場合のエラー処理
-            raise ValueError(f"有効な温度データが見つかりません。{title}の温度データが必要です。")
+            raise ValueError(
+                f"有効な温度データが見つかりません。{title}の温度データが必要です。"
+            )
 
         min_temp = np.floor(min(all_temps) / temp_grid_interval) * temp_grid_interval
         max_temp = np.ceil(max(all_temps) / temp_grid_interval) * temp_grid_interval
 
         # 等温線のグリッドを描画
         plt.grid(True, which="major", axis="y", linestyle="-", alpha=0.3)
-        plt.yticks(np.arange(min_temp, max_temp + temp_grid_interval, temp_grid_interval))
+        plt.yticks(
+            np.arange(min_temp, max_temp + temp_grid_interval, temp_grid_interval)
+        )
 
         # コンポーネントの色を取得
-        component_names = [name for name in temp_dict.keys() if name not in PANEL_COLORS]
+        component_names = [
+            name for name in temp_dict.keys() if name not in PANEL_COLORS
+        ]
         component_colors = get_component_colors(component_names)
 
         # プロット順序を制御（パネル→コンポーネント）
-        plot_order = sorted(temp_dict.keys(), key=lambda x: (x not in ["PX", "MX", "PY", "MY", "PZ", "MZ"], x))
+        plot_order = sorted(
+            temp_dict.keys(),
+            key=lambda x: (x not in ["PX", "MX", "PY", "MY", "PZ", "MZ"], x),
+        )
 
         for name in plot_order:
             temp_history = temp_dict[name]
@@ -145,19 +159,31 @@ def plot_temperature_profile(
 
     # パネル温度のプロット
     if panel_temps:
-        plot_temperature_subplot(panel_temps, "Temperature History of Satellite Panels", "temperature_panel.png")
+        plot_temperature_subplot(
+            panel_temps,
+            "Temperature History of Satellite Panels",
+            "temperature_panel.png",
+        )
 
     # コンポーネント温度のプロット
     if component_temps:
-        plot_temperature_subplot(component_temps, "Temperature History of Components", "temperature_components.png")
+        plot_temperature_subplot(
+            component_temps,
+            "Temperature History of Components",
+            "temperature_components.png",
+        )
 
     # 全温度のプロット
     all_temps = {**panel_temps, **component_temps}
     if all_temps:
-        plot_temperature_subplot(all_temps, "Temperature History of All Elements", "temperature_all.png")
+        plot_temperature_subplot(
+            all_temps, "Temperature History of All Elements", "temperature_all.png"
+        )
 
 
-def save_temperature_data(times: List[float], temperatures: Dict[str, List[float]], output_dir: str):
+def save_temperature_data(
+    times: List[float], temperatures: Dict[str, List[float]], output_dir: str
+):
     """
     Save temperature data to CSV file
 
@@ -186,7 +212,9 @@ def plot_heat_balance(heat_input_records: List[HeatInputRecord], output_dir: str
     surface_names = sorted(set(record.surface_name for record in heat_input_records))
     plt.figure(figsize=(12, 6))
     for surface_name in surface_names:
-        surface_records = [r for r in heat_input_records if r.surface_name == surface_name]
+        surface_records = [
+            r for r in heat_input_records if r.surface_name == surface_name
+        ]
         times = [r.time for r in surface_records]
         total_heat = [r.total_heat for r in surface_records]
         plt.plot(times, total_heat, label=surface_name)
@@ -200,21 +228,43 @@ def plot_heat_balance(heat_input_records: List[HeatInputRecord], output_dir: str
     plt.close()
 
 
-def plot_heat_input_by_surface(heat_input_records: List[HeatInputRecord], output_dir: str):
+def plot_heat_input_by_surface(
+    heat_input_records: List[HeatInputRecord], output_dir: str
+):
     """Plot and save heat input by surface"""
     surface_names = sorted(set(record.surface_name for record in heat_input_records))
 
     for surface_name in surface_names:
-        surface_records = [r for r in heat_input_records if r.surface_name == surface_name]
+        surface_records = [
+            r for r in heat_input_records if r.surface_name == surface_name
+        ]
         times = [r.time for r in surface_records]
 
         plt.figure(figsize=(12, 6))
         # Solar Heat: red
-        plt.plot(times, [r.solar_heat for r in surface_records], label="Solar Heat", color="red", linestyle="-")
+        plt.plot(
+            times,
+            [r.solar_heat for r in surface_records],
+            label="Solar Heat",
+            color="red",
+            linestyle="-",
+        )
         # Albedo Heat: orange
-        plt.plot(times, [r.albedo_heat for r in surface_records], label="Albedo Heat", color="orange", linestyle="-")
+        plt.plot(
+            times,
+            [r.albedo_heat for r in surface_records],
+            label="Albedo Heat",
+            color="orange",
+            linestyle="-",
+        )
         # Earth IR Heat: green
-        plt.plot(times, [r.earth_ir_heat for r in surface_records], label="Earth IR Heat", color="green", linestyle="-")
+        plt.plot(
+            times,
+            [r.earth_ir_heat for r in surface_records],
+            label="Earth IR Heat",
+            color="green",
+            linestyle="-",
+        )
         # Interpanel Radiation: cyan
         plt.plot(
             times,
@@ -253,7 +303,11 @@ def plot_heat_input_by_surface(heat_input_records: List[HeatInputRecord], output
         plt.close()
 
 
-def save_heat_input_data(records: List[HeatInputRecord], output_dir: str = None, filename: str = "heat_input_data.csv"):
+def save_heat_input_data(
+    records: List[HeatInputRecord],
+    output_dir: str = None,
+    filename: str = "heat_input_data.csv",
+):
     """
     熱入力データをCSVファイルに保存
 
@@ -288,7 +342,10 @@ def save_heat_input_data(records: List[HeatInputRecord], output_dir: str = None,
 
 
 def plot_orbit_visualization(
-    altitude: float, beta_angle: float, output_dir: Optional[str] = None, filename: str = "orbit_visualization.png"
+    altitude: float,
+    beta_angle: float,
+    output_dir: Optional[str] = None,
+    filename: str = "orbit_visualization.png",
 ) -> None:
     """
     Visualize satellite orbit in 3D
@@ -317,12 +374,17 @@ def plot_orbit_visualization(
     ax = fig.add_subplot(111, projection="3d")
 
     # 軌道パラメータの計算
-    _, _, beta_rad, orbit_normal, e1, e2 = calculate_orbit_parameters(altitude, beta_angle)
+    _, _, beta_rad, orbit_normal, e1, e2 = calculate_orbit_parameters(
+        altitude, beta_angle
+    )
 
     # 軌道の計算（200点でサンプリング）
     num_points = 200
     theta = np.linspace(0, 2 * np.pi, num_points)
-    r_vecs = np.outer(np.cos(theta), e1) * orbit_radius + np.outer(np.sin(theta), e2) * orbit_radius
+    r_vecs = (
+        np.outer(np.cos(theta), e1) * orbit_radius
+        + np.outer(np.sin(theta), e2) * orbit_radius
+    )
 
     # 太陽方向ベクトル（慣性座標系で固定）
     sun_dir = np.array([1.0, 0.0, 0.0])
@@ -400,14 +462,32 @@ def plot_orbit_visualization(
 
     # Display information on plot
     beta_text = f"Beta Angle: {beta_angle:.1f}°"
-    ax.text2D(0.02, 0.98, beta_text, transform=ax.transAxes, bbox=dict(facecolor="white", alpha=0.8))
+    ax.text2D(
+        0.02,
+        0.98,
+        beta_text,
+        transform=ax.transAxes,
+        bbox=dict(facecolor="white", alpha=0.8),
+    )
 
     alt_text = f"Orbit Altitude: {altitude:.1f} km"
-    ax.text2D(0.02, 0.93, alt_text, transform=ax.transAxes, bbox=dict(facecolor="white", alpha=0.8))
+    ax.text2D(
+        0.02,
+        0.93,
+        alt_text,
+        transform=ax.transAxes,
+        bbox=dict(facecolor="white", alpha=0.8),
+    )
 
     eclipse_fraction = np.sum(eclipse_mask) / len(eclipse_mask)
     eclipse_text = f"Eclipse Fraction: {eclipse_fraction:.2%}"
-    ax.text2D(0.02, 0.88, eclipse_text, transform=ax.transAxes, bbox=dict(facecolor="white", alpha=0.8))
+    ax.text2D(
+        0.02,
+        0.88,
+        eclipse_text,
+        transform=ax.transAxes,
+        bbox=dict(facecolor="white", alpha=0.8),
+    )
 
     # Graph settings
     ax.set_xlabel("X [km]")

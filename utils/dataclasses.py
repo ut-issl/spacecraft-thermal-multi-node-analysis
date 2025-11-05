@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 
+
 @dataclass
 class MaterialProperties:
     """材料の熱物性値"""
