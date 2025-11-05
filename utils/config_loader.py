@@ -1,9 +1,11 @@
-import yaml
 import os
-import pandas as pd
-import numpy as np
 from typing import Dict, List, Tuple
-from .dataclasses import SurfaceMaterial, MaterialProperties, ComponentProperties
+
+import numpy as np
+import pandas as pd
+import yaml
+
+from .dataclasses import ComponentProperties, MaterialProperties, SurfaceMaterial
 
 
 def load_constants() -> dict:

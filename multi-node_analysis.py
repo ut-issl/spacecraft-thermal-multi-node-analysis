@@ -1,31 +1,33 @@
 #!/usr/bin/env python3
-import numpy as np
-import os
 import argparse
+import os
 import shutil
 from typing import Dict, List, Tuple
-from utils.thermal_utils import (
-    ThermalNode,
-    Surface,
-    PanelProperties,
-    SurfaceOpticalProperties,
-    load_constants,
-    HeatInputRecord,
-)
-from utils.satellite_config import SatelliteConfiguration
+
+import numpy as np
+
 from utils.orbit_utils import (
     calculate_orbit_parameters,
     calculate_satellite_attitude,
-    calculate_sun_vector_in_satellite_frame,
     calculate_satellite_position,
+    calculate_sun_vector_in_satellite_frame,
 )
 from utils.plotting_utils import (
-    plot_temperature_profile,
-    save_temperature_data,
     plot_heat_balance,
-    save_heat_input_data,
     plot_heat_input_by_surface,
     plot_orbit_visualization,
+    plot_temperature_profile,
+    save_heat_input_data,
+    save_temperature_data,
+)
+from utils.satellite_config import SatelliteConfiguration
+from utils.thermal_utils import (
+    HeatInputRecord,
+    PanelProperties,
+    Surface,
+    SurfaceOpticalProperties,
+    ThermalNode,
+    load_constants,
 )
 
 

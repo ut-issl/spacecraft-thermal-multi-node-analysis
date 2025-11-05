@@ -1,15 +1,17 @@
 from dataclasses import dataclass
 from typing import Dict, List, Optional
+
 import pandas as pd
-from .dataclasses import SurfaceMaterial, MaterialProperties, ComponentProperties
+
 from .config_loader import (
+    load_component_properties,
+    load_conductance_matrix,
     load_constants,
-    load_surface_properties,
     load_material_properties,
     load_panel_material_assignments,
-    load_conductance_matrix,
-    load_component_properties,
+    load_surface_properties,
 )
+from .dataclasses import ComponentProperties, MaterialProperties, SurfaceMaterial
 
 
 @dataclass
