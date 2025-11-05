@@ -1,9 +1,10 @@
-import pandas as pd
-import os
 import argparse
+import os
 import subprocess
 from datetime import datetime
-from typing import List, Dict
+from typing import Dict, List
+
+import pandas as pd
 
 
 def create_analysis_config_template(output_file: str = "analysis_config_template.csv"):
