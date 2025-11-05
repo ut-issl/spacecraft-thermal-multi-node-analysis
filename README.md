@@ -29,11 +29,11 @@ uv sync
 
 ### 一括解析実行機能
 
-複数の解析条件を一括実行するには、`batch_analysis.py`を使用します。
+複数の解析条件を一括実行するには、`batch-analysis`コマンドを使用します。
 
 1. 解析設定のテンプレートファイルを作成：
 ```bash
-python batch_analysis.py create-template
+uv run batch-analysis create-template
 ```
 
 2. 作成された`analysis_config_template.csv`を編集して、実行したい解析条件を記述：
@@ -46,7 +46,7 @@ deep_space,,,,1.0,0.0,0.0,40010.0,,5.0,output/deep_space_sun_x1.0_y0.0_z0.0
 
 3. 設定ファイルを使って一括解析を実行：
 ```bash
-python batch_analysis.py batch analysis_config_template.csv
+uv run batch-analysis batch analysis_config_template.csv
 ```
 
 #### 設定ファイルの項目
@@ -77,7 +77,7 @@ python batch_analysis.py batch analysis_config_template.csv
 ### 地球周回軌道の非定常解析
 
 ```bash
-python multi-node_analysis.py --mode earth --altitude 600 --beta 0 --duration 40010 --output_dir output --temp-grid-interval 5.0
+uv run multi-node-analysis --mode earth --altitude 600 --beta 0 --duration 40010 --output_dir output --temp-grid-interval 5.0
 ```
 - `--altitude`：軌道高度 [km]
 - `--beta`：ベータ角 [度]
@@ -89,7 +89,7 @@ python multi-node_analysis.py --mode earth --altitude 600 --beta 0 --duration 40
 ### 深宇宙探査機の非定常解析
 
 ```bash
-python multi-node_analysis.py --mode deep_space --sun_x 1 --sun_y 0 --sun_z 0 --duration 10010 --output_dir output --temp-grid-interval 5.0
+uv run multi-node-analysis --mode deep_space --sun_x 1 --sun_y 0 --sun_z 0 --duration 10010 --output_dir output --temp-grid-interval 5.0
 ```
 - `--sun_x`, `--sun_y`, `--sun_z`：太陽方向ベクトル（衛星機体座標系、正規化不要）
 - `--duration`：解析時間 [秒]（省略時は6000秒）
@@ -185,25 +185,25 @@ python multi-node_analysis.py --mode deep_space --sun_x 1 --sun_y 0 --sun_z 0 --
 
 ## 温度データ比較機能
 
-`compare_temperature_data.py`を使用して、異なる解析結果間の温度データを比較できます。
+`compare-temperature-data`コマンドを使用して、異なる解析結果間の温度データを比較できます。
 想定は、ThermalDesktopのWrite Results Data to Text機能で出力したCSVと、本プログラムの出力データの比較です。
 
 ### 単一の比較を実行
 
 ```bash
-python compare_temperature_data.py single <comparison/td/のCSVファイル> <output/配下のtemperature_data.csvファイル>
+uv run compare-temperature-data single <comparison/td/のCSVファイル> <output/配下のtemperature_data.csvファイル>
 ```
 
 例：
 ```bash
-python compare_temperature_data.py single comparison/td/test.csv output/earth_orbit_alt500.0_beta60.0/temperature_data.csv
+uv run compare-temperature-data single comparison/td/test.csv output/earth_orbit_alt500.0_beta60.0/temperature_data.csv
 ```
 
 ### 複数の比較を一括実行
 
 1. 比較設定のテンプレートファイルを作成：
 ```bash
-python compare_temperature_data.py create-template
+uv run compare-temperature-data create-template
 ```
 
 2. 作成された`comparison_config_template.csv`を編集して、比較したいファイルの組み合わせを記述：
@@ -216,7 +216,7 @@ comparison/td/test3.csv,output/earth_orbit_alt700.0_beta75.0/temperature_data.cs
 
 3. 設定ファイルを使って一括比較を実行：
 ```bash
-python compare_temperature_data.py batch comparison_config_template.csv
+uv run compare-temperature-data batch comparison_config_template.csv
 ```
 
 ### 出力ファイル
@@ -266,6 +266,6 @@ python compare_temperature_data.py batch comparison_config_template.csv
 
 - `--output-dir`: 出力先ディレクトリを指定（デフォルト: `comparison`）
 ```bash
-python compare_temperature_data.py single <td_file> <output_file> --output-dir custom_output
-python compare_temperature_data.py batch <config_file> --output-dir custom_output
+uv run compare-temperature-data single <td_file> <output_file> --output-dir custom_output
+uv run compare-temperature-data batch <config_file> --output-dir custom_output
 ```
