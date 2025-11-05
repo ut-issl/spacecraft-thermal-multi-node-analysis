@@ -6,13 +6,13 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 
-from utils.orbit_utils import (
+from .utils.orbit_utils import (
     calculate_orbit_parameters,
     calculate_satellite_attitude,
     calculate_satellite_position,
     calculate_sun_vector_in_satellite_frame,
 )
-from utils.plotting_utils import (
+from .utils.plotting_utils import (
     plot_heat_balance,
     plot_heat_input_by_surface,
     plot_orbit_visualization,
@@ -20,8 +20,8 @@ from utils.plotting_utils import (
     save_heat_input_data,
     save_temperature_data,
 )
-from utils.satellite_config import SatelliteConfiguration
-from utils.thermal_utils import (
+from .utils.satellite_config import SatelliteConfiguration
+from .utils.thermal_utils import (
     HeatInputRecord,
     PanelProperties,
     Surface,
