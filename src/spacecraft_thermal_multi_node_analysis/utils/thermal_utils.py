@@ -653,57 +653,6 @@ class ThermalNode:
         return self.component_temperatures[component_name]
 
 
-def create_satellite_surfaces(config: SatelliteConfiguration) -> List[Surface]:
-    """衛星の各面を作成"""
-    dims = config.dimensions
-    surfaces = []
-
-    # 各面の法線ベクトルと面積を定義
-    surface_defs = [
-        ("PX", np.array([1, 0, 0]), dims["length_y"] * dims["length_z"]),  # +X
-        ("MX", np.array([-1, 0, 0]), dims["length_y"] * dims["length_z"]),  # -X
-        ("PY", np.array([0, 1, 0]), dims["length_x"] * dims["length_z"]),  # +Y
-        ("MY", np.array([0, -1, 0]), dims["length_x"] * dims["length_z"]),  # -Y
-        ("PZ", np.array([0, 0, 1]), dims["length_x"] * dims["length_y"]),  # +Z
-        ("MZ", np.array([0, 0, -1]), dims["length_x"] * dims["length_y"]),  # -Z
-    ]
-
-    for name, normal, area in surface_defs:
-        # パネルの材料構成を読み込み
-        panel_config = config.panel_material_assignments[name][0]  # パネルは単一材料
-        panel_material = config.material_properties[panel_config["material"]]
-        panel_thickness = panel_config["thickness"]
-
-        # 表面光学特性を読み込み
-        optical_configs = config.surface_optical_assignments[name]
-
-        # 外側の表面光学特性
-        outside_materials = []
-        for opt_config in optical_configs["outside"]:
-            opt_name = opt_config["material"]
-            ratio = opt_config["ratio"]
-            outside_materials.append((config.surface_materials[opt_name], ratio))
-
-        # 内側の表面光学特性
-        inside_materials = []
-        for opt_config in optical_configs["inside"]:
-            opt_name = opt_config["material"]
-            ratio = opt_config["ratio"]
-            inside_materials.append((config.surface_materials[opt_name], ratio))
-
-        surfaces.append(
-            Surface(
-                name=name,
-                normal=normal,
-                area=area * 1e-6,  # mm^2 to m^2
-                panel=PanelProperties(material=panel_material, thickness=panel_thickness),
-                optical_properties=SurfaceOpticalProperties(outside=outside_materials, inside=inside_materials),
-            )
-        )
-
-    return surfaces
-
-
 def calculate_radiative_conductance_matrix(
     surfaces: Dict[str, Surface], dimensions: Dict[str, float]
 ) -> Tuple[np.ndarray, List[str]]:
