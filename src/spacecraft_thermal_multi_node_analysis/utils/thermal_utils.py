@@ -679,7 +679,7 @@ def calculate_radiative_conductance_matrix(
     surfaces: dict[str, Surface],
     dimensions: dict[str, float],
     *,
-    debug: bool = False,  # TODO-DEBUG
+    debug: bool = False,
 ) -> tuple[np.ndarray, list[str]]:
     """6面+宇宙ノードの7x7 Rij（放射伝達行列）を作成する。
     面ノード間のRijは「面積 x i面放射率 x Fij」で計算。

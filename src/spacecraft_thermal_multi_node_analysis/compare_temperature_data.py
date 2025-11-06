@@ -36,7 +36,7 @@ def write_rmse_log(log_file: str, td_file: str, output_file: str, rmse_dict: dic
         rmse_dict (Dict[str, float]): 各ノードのRMSE
 
     """
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # noqa: DTZ005
     log_dir = os.path.dirname(log_file)
     os.makedirs(log_dir, exist_ok=True)
 

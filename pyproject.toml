@@ -45,14 +45,14 @@ ignore = [
   # "C",
   "N",
   "ERA",
-  "TD",
+  # "TD",
   "PLW",
   "FBT",
   "PERF",
   "PTH",
   "ARG",
   "E501",  # Line too long
-  "DTZ",
+  # "DTZ",
   # "RUF",
   # "EXE",
   "S",
@@ -77,6 +77,7 @@ ignore = [
   "D213",  # multi-line docstring summary should start at the second line
   # "RET505",  # Unnecessary `else` after `return` statement
   "ANN401",  # Dynamically typed expressions (typing.Any) are disallowed
+  "TD002",  # missing author in TODO
   "TD003",  # add link on issue into TODO
   "FIX002",  # Line contains TODO
   # "ERA001",  # commented-out-code

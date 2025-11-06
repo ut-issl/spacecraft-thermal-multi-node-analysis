@@ -65,7 +65,7 @@ def write_analysis_log(log_file: str, config: dict, status: str, error_msg: str 
     """
     # ログファイルのパスを絶対パスに変換
     log_file = os.path.abspath(log_file)
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # noqa: DTZ005
     log_dir = os.path.dirname(log_file)
     os.makedirs(log_dir, exist_ok=True)
 
