@@ -252,7 +252,9 @@ def plot_heat_input_by_surface(heat_input_records: list[HeatInputRecord], output
 
 
 def save_heat_input_data(
-    records: list[HeatInputRecord], output_dir: str | None = None, filename: str = "heat_input_data.csv",
+    records: list[HeatInputRecord],
+    output_dir: str | None = None,
+    filename: str = "heat_input_data.csv",
 ):
     """熱入力データをCSVファイルに保存
 
@@ -320,7 +322,7 @@ def plot_orbit_visualization(
     ax = fig.add_subplot(111, projection="3d")
 
     # 軌道パラメータの計算
-    _, _, beta_rad, orbit_normal, e1, e2 = calculate_orbit_parameters(altitude, beta_angle)
+    _, _, _beta_rad, orbit_normal, e1, e2 = calculate_orbit_parameters(altitude, beta_angle)
 
     # 軌道の計算（200点でサンプリング）
     num_points = 200

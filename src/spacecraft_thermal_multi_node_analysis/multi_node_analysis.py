@@ -107,7 +107,7 @@ def run_earth_orbit_analysis(
     """
     debug = constants.get("debug", False)
     # 軌道パラメータの計算
-    period, eclipse_fraction, beta_rad, orbit_normal, e1, e2 = calculate_orbit_parameters(altitude, beta_angle)
+    period, _eclipse_fraction, beta_rad, orbit_normal, e1, e2 = calculate_orbit_parameters(altitude, beta_angle)
     if duration is None:
         duration = period
 
@@ -156,17 +156,28 @@ def run_earth_orbit_analysis(
     for t in times[1:]:
         # 衛星の位置・速度ベクトルと蝕の状態を計算
         position, velocity, in_eclipse = calculate_satellite_position(
-            time=t, period=period, altitude=altitude, orbit_normal=orbit_normal, e1=e1, e2=e2,
+            time=t,
+            period=period,
+            altitude=altitude,
+            orbit_normal=orbit_normal,
+            e1=e1,
+            e2=e2,
         )
 
         # 姿勢行列を計算
         rotation_matrix = calculate_satellite_attitude(
-            position=position, velocity=velocity, attitude_config=attitude_mode, debug=constants.get("debug", False),
+            position=position,
+            velocity=velocity,
+            attitude_config=attitude_mode,
+            debug=constants.get("debug", False),
         )
 
         # 太陽方向ベクトル（衛星固定系）
         sun_vector = calculate_sun_vector_in_satellite_frame(
-            time=t, period=period, beta_angle=beta_rad, rotation_matrix=rotation_matrix,
+            time=t,
+            period=period,
+            beta_angle=beta_rad,
+            rotation_matrix=rotation_matrix,
         )
 
         # 地球方向ベクトルとビューファクターを計算
@@ -318,10 +329,15 @@ def main():
     parser.add_argument("--sun_z", type=float, help="太陽方向ベクトルZ成分（深宇宙モード用）")
     parser.add_argument("--num_orbits", type=int, default=1, help="解析する周回数（デフォルト: 1）")
     parser.add_argument(
-        "--duration", type=float, help="解析時間 [秒]（指定しない場合は地球周回は1軌道×num_orbits、深宇宙は6000秒）",
+        "--duration",
+        type=float,
+        help="解析時間 [秒]（指定しない場合は地球周回は1軌道×num_orbits、深宇宙は6000秒）",
     )
     parser.add_argument(
-        "--temp-grid-interval", type=float, default=10.0, help="温度プロファイルの等温線の間隔 [°C] (デフォルト: 10.0)",
+        "--temp-grid-interval",
+        type=float,
+        default=10.0,
+        help="温度プロファイルの等温線の間隔 [°C] (デフォルト: 10.0)",
     )
     args = parser.parse_args()
 
@@ -375,7 +391,11 @@ def main():
 
         # 結果のプロットと保存
         plot_temperature_profile(
-            times, temperatures, output_path, eclipse_flags, temp_grid_interval=args.temp_grid_interval,
+            times,
+            temperatures,
+            output_path,
+            eclipse_flags,
+            temp_grid_interval=args.temp_grid_interval,
         )
         save_temperature_data(times, temperatures, output_path)
         plot_heat_balance(heat_input_records, output_path)
@@ -424,7 +444,11 @@ def main():
         node_for_vf.save_rij_matrix(output_path, debug=debug)
         # 結果のプロットと保存（地球周回と同じ関数を使う）
         plot_temperature_profile(
-            times, temperatures, output_path, eclipse_flags, temp_grid_interval=args.temp_grid_interval,
+            times,
+            temperatures,
+            output_path,
+            eclipse_flags,
+            temp_grid_interval=args.temp_grid_interval,
         )
         save_temperature_data(times, temperatures, output_path)
         plot_heat_balance(heat_input_records, output_path)

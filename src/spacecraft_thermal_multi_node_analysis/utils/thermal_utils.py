@@ -133,7 +133,11 @@ class Surface:
         # アルベドは太陽光の反射なので、新しいビューファクター計算を使用
         for optical_props, ratio in self.optical_properties.outside:
             albedo_view_factor = calculate_albedo_view_factor(
-                earth_vector, sun_vector, self.normal, altitude, orbit_normal,
+                earth_vector,
+                sun_vector,
+                self.normal,
+                altitude,
+                orbit_normal,
             )
             albedo_heat += solar_constant * earth_albedo * self.area * optical_props.alpha * albedo_view_factor * ratio
 
@@ -192,8 +196,7 @@ class ViewFactorMatrix:
         return 0.0  # その他の面は直接見えない
 
     def _calculate_perpendicular_view_factor(self, surface_i: Surface, surface_j: Surface) -> float:
-        """直交し1辺を共有する長方形面間のビューファクター（厳密解）
-        """
+        """直交し1辺を共有する長方形面間のビューファクター（厳密解）"""
         dims = self.dimensions
         Lx = dims["length_x"] * 1e-3
         Ly = dims["length_y"] * 1e-3
@@ -370,14 +373,15 @@ class ThermalNode:
         return self.surfaces[surface_name].calculate_heat_capacity()
 
     def calculate_interpanel_radiation(self, stefan_boltzmann: float, *, debug: bool = False) -> dict[str, float]:
-        """Rij（放射伝達行列）を用いた厳密な熱輻射計算（宇宙放射含む）
-        """
+        """Rij（放射伝達行列）を用いた厳密な熱輻射計算（宇宙放射含む）"""
         # Rij, node_namesをキャッシュ
         if self._rij_cache is None or self._rij_names is None:
             from .thermal_utils import calculate_radiative_conductance_matrix
 
             self._rij_cache, self._rij_names = calculate_radiative_conductance_matrix(
-                self.surfaces, self.dimensions, debug=debug,
+                self.surfaces,
+                self.dimensions,
+                debug=debug,
             )
         Rij = self._rij_cache
         _node_names = self._rij_names
@@ -432,8 +436,8 @@ class ThermalNode:
         earth_vector: np.ndarray | None = None,
         in_eclipse: bool = False,
         time: float = 0.0,
-        altitude: float = None,
-        orbit_normal: np.ndarray = None,
+        altitude: float | None = None,
+        orbit_normal: np.ndarray | None = None,
     ) -> dict[str, float]:
         """各面の熱収支を計算（パネル間輻射をRijで最適化）"""
         solar_constant = constants["physical_constants"]["solar_constant"]
@@ -445,7 +449,8 @@ class ThermalNode:
 
         # パネル間輻射（Rij法、宇宙放射含む）を一度だけ計算
         interpanel_radiation = self.calculate_interpanel_radiation(
-            stefan_boltzmann, debug=constants.get("debug", False),
+            stefan_boltzmann,
+            debug=constants.get("debug", False),
         )
 
         # コンダクタンスによる熱伝導を計算
@@ -464,7 +469,13 @@ class ThermalNode:
                 earth_ir_heat = 0.0
                 if earth_vector is not None and (enable_albedo or enable_earth_ir):
                     albedo_heat, earth_ir_heat = surface.calculate_earth_heat(
-                        earth_vector, solar_constant, earth_albedo, earth_ir, altitude, sun_vector, orbit_normal,
+                        earth_vector,
+                        solar_constant,
+                        earth_albedo,
+                        earth_ir,
+                        altitude,
+                        sun_vector,
+                        orbit_normal,
                     )
 
                 # MLIノードの熱収支を計算
@@ -506,7 +517,13 @@ class ThermalNode:
                 earth_ir_heat = 0.0
                 if earth_vector is not None and (enable_albedo or enable_earth_ir):
                     albedo_heat, earth_ir_heat = surface.calculate_earth_heat(
-                        earth_vector, solar_constant, earth_albedo, earth_ir, altitude, sun_vector, orbit_normal,
+                        earth_vector,
+                        solar_constant,
+                        earth_albedo,
+                        earth_ir,
+                        altitude,
+                        sun_vector,
+                        orbit_normal,
                     )
 
                 # 面の熱収支を計算
@@ -546,7 +563,8 @@ class ThermalNode:
         # パネル間輻射とコンダクタンスの計算と加算
         for surface_name in self.surfaces.keys():
             heat_balances[surface_name] += interpanel_radiation.get(surface_name, 0.0) + conductance_heat.get(
-                surface_name, 0.0,
+                surface_name,
+                0.0,
             )
 
         # コンポーネントの熱収支を計算
@@ -676,7 +694,7 @@ def calculate_radiative_conductance_matrix(
     """
     surface_names = list(surfaces.keys())
     n = len(surface_names)
-    node_names = surface_names + ["SPACE"]
+    node_names = [*surface_names, "SPACE"]
     Rij = np.zeros((n + 1, n + 1))
 
     vfm = ViewFactorMatrix(surfaces, dimensions, debug=debug)

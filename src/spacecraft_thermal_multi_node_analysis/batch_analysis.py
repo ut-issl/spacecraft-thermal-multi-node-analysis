@@ -53,7 +53,7 @@ def load_analysis_config(config_file: str) -> list[dict]:
     return configs
 
 
-def write_analysis_log(log_file: str, config: dict, status: str, error_msg: str = None):
+def write_analysis_log(log_file: str, config: dict, status: str, error_msg: str | None = None):
     """解析実行のログを記録する関数
 
     Args:
