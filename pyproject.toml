@@ -42,7 +42,7 @@ ignore = [
   "D",
   "PLR",
   "SIM",
-  "C",
+  # "C",
   "N",
   "ERA",
   "TD",
@@ -81,6 +81,7 @@ ignore = [
   "FIX002",  # Line contains TODO
   # "ERA001",  # commented-out-code
   "PLR0913",  # Too many arguments in function definition
+  "C901",  # too complex
 ]
 unfixable = [
   # "F401",  # Prevent auto-fix for unused imports

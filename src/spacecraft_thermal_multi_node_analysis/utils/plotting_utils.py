@@ -181,7 +181,7 @@ def save_temperature_data(times: list[float], temperatures: dict[str, list[float
 def plot_heat_balance(heat_input_records: list[HeatInputRecord], output_dir: str):
     """Plot and save heat balance (total heat balance per surface over time)"""
     # 各面ごとに時系列とTotal Heat Balanceを抽出
-    surface_names = sorted(set(record.surface_name for record in heat_input_records))
+    surface_names = sorted({record.surface_name for record in heat_input_records})
     plt.figure(figsize=(12, 6))
     for surface_name in surface_names:
         surface_records = [r for r in heat_input_records if r.surface_name == surface_name]
@@ -200,7 +200,7 @@ def plot_heat_balance(heat_input_records: list[HeatInputRecord], output_dir: str
 
 def plot_heat_input_by_surface(heat_input_records: list[HeatInputRecord], output_dir: str):
     """Plot and save heat input by surface"""
-    surface_names = sorted(set(record.surface_name for record in heat_input_records))
+    surface_names = sorted({record.surface_name for record in heat_input_records})
 
     for surface_name in surface_names:
         surface_records = [r for r in heat_input_records if r.surface_name == surface_name]
@@ -405,14 +405,14 @@ def plot_orbit_visualization(
 
     # Display information on plot
     beta_text = f"Beta Angle: {beta_angle:.1f}°"
-    ax.text2D(0.02, 0.98, beta_text, transform=ax.transAxes, bbox=dict(facecolor="white", alpha=0.8))
+    ax.text2D(0.02, 0.98, beta_text, transform=ax.transAxes, bbox={"facecolor": "white", "alpha": 0.8})
 
     alt_text = f"Orbit Altitude: {altitude:.1f} km"
-    ax.text2D(0.02, 0.93, alt_text, transform=ax.transAxes, bbox=dict(facecolor="white", alpha=0.8))
+    ax.text2D(0.02, 0.93, alt_text, transform=ax.transAxes, bbox={"facecolor": "white", "alpha": 0.8})
 
     eclipse_fraction = np.sum(eclipse_mask) / len(eclipse_mask)
     eclipse_text = f"Eclipse Fraction: {eclipse_fraction:.2%}"
-    ax.text2D(0.02, 0.88, eclipse_text, transform=ax.transAxes, bbox=dict(facecolor="white", alpha=0.8))
+    ax.text2D(0.02, 0.88, eclipse_text, transform=ax.transAxes, bbox={"facecolor": "white", "alpha": 0.8})
 
     # Graph settings
     ax.set_xlabel("X [km]")
