@@ -54,7 +54,7 @@ ignore = [
   "E501",  # Line too long
   "DTZ",
   # "RUF",
-  "EXE",
+  # "EXE",
   "S",
   "BLE",
   "PD",
