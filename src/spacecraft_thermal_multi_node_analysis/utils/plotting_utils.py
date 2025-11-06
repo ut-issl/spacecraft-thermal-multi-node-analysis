@@ -1,5 +1,4 @@
 import os
-from typing import Dict, List, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -26,10 +25,10 @@ PANEL_COLORS = {
 
 
 def plot_temperature_profile(
-    times: List[float],
-    temperatures: Dict[str, List[float]],
+    times: list[float],
+    temperatures: dict[str, list[float]],
     output_dir: str,
-    eclipse_flags: Optional[List[bool]] = None,
+    eclipse_flags: list[bool] | None = None,
     temp_grid_interval: float = 5.0,
 ):
     """Plot and save temperature history
@@ -61,7 +60,7 @@ def plot_temperature_profile(
             component_temps[name] = temp_history
 
     # コンポーネントの色を動的に割り当てる関数
-    def get_component_colors(component_names: List[str]) -> Dict[str, str]:
+    def get_component_colors(component_names: list[str]) -> dict[str, str]:
         # matplotlibのデフォルトの色サイクルを取得
         default_colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
         # パネルで使用している色を除外
@@ -74,7 +73,7 @@ def plot_temperature_profile(
         return {name: available_colors[i % len(available_colors)] for i, name in enumerate(sorted_components)}
 
     # 共通のプロット設定関数
-    def plot_temperature_subplot(temp_dict: Dict[str, List[float]], title: str, filename: str):
+    def plot_temperature_subplot(temp_dict: dict[str, list[float]], title: str, filename: str):
         plt.figure(figsize=(10, 6))
 
         # 温度の範囲を取得（ケルビンから摂氏に変換）
@@ -93,7 +92,7 @@ def plot_temperature_profile(
         plt.yticks(np.arange(min_temp, max_temp + temp_grid_interval, temp_grid_interval))
 
         # コンポーネントの色を取得
-        component_names = [name for name in temp_dict.keys() if name not in PANEL_COLORS]
+        component_names = [name for name in temp_dict if name not in PANEL_COLORS]
         component_colors = get_component_colors(component_names)
 
         # プロット順序を制御（パネル→コンポーネント）
@@ -106,7 +105,7 @@ def plot_temperature_profile(
             # 時間と温度の長さが一致することを確認
             if len(times) != len(temp_celsius):
                 raise ValueError(
-                    f"時間と温度のデータ長が一致しません。name: {name}, times: {len(times)}, temperatures: {len(temp_celsius)}"
+                    f"時間と温度のデータ長が一致しません。name: {name}, times: {len(times)}, temperatures: {len(temp_celsius)}",
                 )
 
             # 色の設定
@@ -156,14 +155,14 @@ def plot_temperature_profile(
         plot_temperature_subplot(all_temps, "Temperature History of All Elements", "temperature_all.png")
 
 
-def save_temperature_data(times: List[float], temperatures: Dict[str, List[float]], output_dir: str):
-    """
-    Save temperature data to CSV file
+def save_temperature_data(times: list[float], temperatures: dict[str, list[float]], output_dir: str):
+    """Save temperature data to CSV file
 
     Args:
         times: Time list [s]
         temperatures: Temperature history for each surface (key: surface name)
         output_dir: Output directory
+
     """
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
@@ -179,7 +178,7 @@ def save_temperature_data(times: List[float], temperatures: Dict[str, List[float
     df.to_csv(os.path.join(output_dir, "temperature_data.csv"), index=False)
 
 
-def plot_heat_balance(heat_input_records: List[HeatInputRecord], output_dir: str):
+def plot_heat_balance(heat_input_records: list[HeatInputRecord], output_dir: str):
     """Plot and save heat balance (total heat balance per surface over time)"""
     # 各面ごとに時系列とTotal Heat Balanceを抽出
     surface_names = sorted(set(record.surface_name for record in heat_input_records))
@@ -199,7 +198,7 @@ def plot_heat_balance(heat_input_records: List[HeatInputRecord], output_dir: str
     plt.close()
 
 
-def plot_heat_input_by_surface(heat_input_records: List[HeatInputRecord], output_dir: str):
+def plot_heat_input_by_surface(heat_input_records: list[HeatInputRecord], output_dir: str):
     """Plot and save heat input by surface"""
     surface_names = sorted(set(record.surface_name for record in heat_input_records))
 
@@ -253,15 +252,15 @@ def plot_heat_input_by_surface(heat_input_records: List[HeatInputRecord], output
 
 
 def save_heat_input_data(
-    records: List[HeatInputRecord], output_dir: str | None = None, filename: str = "heat_input_data.csv"
+    records: list[HeatInputRecord], output_dir: str | None = None, filename: str = "heat_input_data.csv",
 ):
-    """
-    熱入力データをCSVファイルに保存
+    """熱入力データをCSVファイルに保存
 
     Args:
         records: 熱入力記録のリスト
         output_dir: 出力ディレクトリ
         filename: 出力ファイル名
+
     """
     # データフレームの作成
     data = []
@@ -276,7 +275,7 @@ def save_heat_input_data(
                 "Interpanel Radiation [W]": record.interpanel_radiation,
                 "Conductance Heat [W]": record.conductance_heat,
                 "Total Heat [W]": record.total_heat,
-            }
+            },
         )
 
     df = pd.DataFrame(data)
@@ -291,21 +290,20 @@ def save_heat_input_data(
 def plot_orbit_visualization(
     altitude: float,
     beta_angle: float,
-    output_dir: Optional[str] = None,
+    output_dir: str | None = None,
     filename: str = "orbit_visualization.png",
     *,
     debug: bool = False,
 ) -> None:
-    """
-    Visualize satellite orbit in 3D
+    """Visualize satellite orbit in 3D
 
     Args:
         altitude: Orbit altitude [km]
         beta_angle: Beta angle [deg] (angle between orbit normal and sun direction)
         output_dir: Output directory (None for display only)
         filename: Output filename
-    """
 
+    """
     # Earth parameters
     earth_radius = 6371.0  # Earth radius [km]
     orbit_radius = earth_radius + altitude
@@ -346,7 +344,7 @@ def plot_orbit_visualization(
         print(f"Basis vector e2: {e2}")
         print(f"Sun direction: {s_hat}")
         print(
-            f"Angle between sun and orbit normal: {np.degrees(np.arccos(np.clip(np.dot(orbit_normal, s_hat), -1.0, 1.0))):.2f} degrees"
+            f"Angle between sun and orbit normal: {np.degrees(np.arccos(np.clip(np.dot(orbit_normal, s_hat), -1.0, 1.0))):.2f} degrees",
         )
 
         print("\n[3] Eclipse Statistics")

@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 import pandas as pd
 
@@ -18,17 +17,17 @@ from .dataclasses import ComponentProperties, MaterialProperties, SurfaceMateria
 class SatelliteConfiguration:
     """衛星の設定を管理するクラス"""
 
-    dimensions: Dict[str, float]  # mm
-    internal_heat: Dict[str, float]  # W（面ごとの内部発熱）
-    surface_materials: Dict[str, SurfaceMaterial]  # 表面光学特性
-    surface_optical_assignments: Dict[
-        str, Dict[str, List[Dict[str, float]]]
+    dimensions: dict[str, float]  # mm
+    internal_heat: dict[str, float]  # W（面ごとの内部発熱）
+    surface_materials: dict[str, SurfaceMaterial]  # 表面光学特性
+    surface_optical_assignments: dict[
+        str, dict[str, list[dict[str, float]]],
     ]  # 面の表面光学特性割り当て（outside/inside）
-    material_properties: Dict[str, MaterialProperties]  # 材料物性
-    panel_material_assignments: Dict[str, List[Dict[str, float]]]  # パネルの材料構成（材料名と厚み）
-    conductance_matrix: Optional[pd.DataFrame]  # パネル間の熱伝導率 [W/K]（Noneの場合は無効）
+    material_properties: dict[str, MaterialProperties]  # 材料物性
+    panel_material_assignments: dict[str, list[dict[str, float]]]  # パネルの材料構成（材料名と厚み）
+    conductance_matrix: pd.DataFrame | None  # パネル間の熱伝導率 [W/K]（Noneの場合は無効）
     enable_conductance: bool  # パネル間の熱伝導（Cij）を有効にするかどうか
-    components: Dict[str, ComponentProperties]  # コンポーネントの熱物性値
+    components: dict[str, ComponentProperties]  # コンポーネントの熱物性値
 
     @classmethod
     def from_config_files(cls, settings_dir: str) -> "SatelliteConfiguration":
@@ -63,14 +62,14 @@ class SatelliteConfiguration:
             outside_ratio_sum = sum(opt["ratio"] for opt in optical_configs["outside"])
             if abs(outside_ratio_sum - 1.0) > 1e-6:
                 raise ValueError(
-                    f"面 {surface_name} の外側表面光学特性の割合の合計が1.0ではありません: {outside_ratio_sum}"
+                    f"面 {surface_name} の外側表面光学特性の割合の合計が1.0ではありません: {outside_ratio_sum}",
                 )
 
             # 内側の表面光学特性を検証
             inside_ratio_sum = sum(opt["ratio"] for opt in optical_configs["inside"])
             if abs(inside_ratio_sum - 1.0) > 1e-6:
                 raise ValueError(
-                    f"面 {surface_name} の内側表面光学特性の割合の合計が1.0ではありません: {inside_ratio_sum}"
+                    f"面 {surface_name} の内側表面光学特性の割合の合計が1.0ではありません: {inside_ratio_sum}",
                 )
 
             # 材料の存在確認
@@ -78,7 +77,7 @@ class SatelliteConfiguration:
                 for opt in optical_configs[side]:
                     if opt["material"] not in surface_materials:
                         raise ValueError(
-                            f"面 {surface_name} の{side}表面光学特性の材料 {opt['material']} が定義されていません"
+                            f"面 {surface_name} の{side}表面光学特性の材料 {opt['material']} が定義されていません",
                         )
 
         # コンポーネントの設定を検証

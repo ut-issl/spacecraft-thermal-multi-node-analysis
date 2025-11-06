@@ -2,21 +2,20 @@ import argparse
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List
 
 import numpy as np
 import pandas as pd
 
 
-def calculate_rmse(diff_df: pd.DataFrame) -> Dict[str, float]:
-    """
-    各ノードの時間平均RMSEを計算する関数
+def calculate_rmse(diff_df: pd.DataFrame) -> dict[str, float]:
+    """各ノードの時間平均RMSEを計算する関数
 
     Args:
         diff_df (pd.DataFrame): 差分データのDataFrame
 
     Returns:
         Dict[str, float]: 各ノードのRMSE
+
     """
     rmse_dict = {}
     for col in diff_df.columns:
@@ -27,15 +26,15 @@ def calculate_rmse(diff_df: pd.DataFrame) -> Dict[str, float]:
     return rmse_dict
 
 
-def write_rmse_log(log_file: str, td_file: str, output_file: str, rmse_dict: Dict[str, float]):
-    """
-    RMSEの結果をログファイルに記録する関数
+def write_rmse_log(log_file: str, td_file: str, output_file: str, rmse_dict: dict[str, float]):
+    """RMSEの結果をログファイルに記録する関数
 
     Args:
         log_file (str): ログファイルのパス
         td_file (str): 比較元ファイルのパス
         output_file (str): 比較先ファイルのパス
         rmse_dict (Dict[str, float]): 各ノードのRMSE
+
     """
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     log_dir = os.path.dirname(log_file)
@@ -46,14 +45,12 @@ def write_rmse_log(log_file: str, td_file: str, output_file: str, rmse_dict: Dic
         f.write(f"比較元: {td_file}\n")
         f.write(f"比較先: {output_file}\n")
         f.write("各ノードの時間平均RMSE [°C]:\n")
-        for node, rmse in rmse_dict.items():
-            f.write(f"  {node}: {rmse:.6f}\n")
+        f.writelines(f"  {node}: {rmse:.6f}\n" for node, rmse in rmse_dict.items())
         f.write("-" * 50 + "\n")
 
 
 def compare_temperature_data(td_file: str, output_file: str, output_dir: str = "comparison") -> str:
-    """
-    温度データを比較し、差分を計算してCSVファイルに出力する関数
+    """温度データを比較し、差分を計算してCSVファイルに出力する関数
 
     Args:
         td_file (str): comparison/td/配下のCSVファイルパス
@@ -62,6 +59,7 @@ def compare_temperature_data(td_file: str, output_file: str, output_dir: str = "
 
     Returns:
         str: 出力ファイルのパス
+
     """
     # 入力ファイルの読み込み
     td_df = pd.read_csv(td_file)
@@ -113,15 +111,15 @@ def compare_temperature_data(td_file: str, output_file: str, output_dir: str = "
     return output_path
 
 
-def load_comparison_config(config_file: str) -> List[Dict[str, str]]:
-    """
-    比較設定を読み込む関数
+def load_comparison_config(config_file: str) -> list[dict[str, str]]:
+    """比較設定を読み込む関数
 
     Args:
         config_file (str): 比較設定CSVファイルのパス
 
     Returns:
         List[Dict[str, str]]: 比較設定のリスト
+
     """
     config_df = pd.read_csv(config_file)
     required_columns = ["td_file", "output_file"]
@@ -135,9 +133,8 @@ def load_comparison_config(config_file: str) -> List[Dict[str, str]]:
     return configs
 
 
-def batch_compare(config_file: str, output_dir: str = "comparison") -> List[str]:
-    """
-    複数の比較を一括実行する関数
+def batch_compare(config_file: str, output_dir: str = "comparison") -> list[str]:
+    """複数の比較を一括実行する関数
 
     Args:
         config_file (str): 比較設定CSVファイルのパス
@@ -145,6 +142,7 @@ def batch_compare(config_file: str, output_dir: str = "comparison") -> List[str]
 
     Returns:
         List[str]: 出力ファイルのパスのリスト
+
     """
     # 設定の読み込み
     configs = load_comparison_config(config_file)
@@ -156,20 +154,20 @@ def batch_compare(config_file: str, output_dir: str = "comparison") -> List[str]
             output_path = compare_temperature_data(config["td_file"], config["output_file"], output_dir)
             output_paths.append(output_path)
         except Exception as e:
-            print(f"エラー: {config['td_file']} と {config['output_file']} の比較中にエラーが発生しました: {str(e)}")
+            print(f"エラー: {config['td_file']} と {config['output_file']} の比較中にエラーが発生しました: {e!s}")
 
     return output_paths
 
 
 def create_config_template(output_file: str = "comparison_config_template.csv"):
-    """
-    比較設定のテンプレートファイルを作成する関数
+    """比較設定のテンプレートファイルを作成する関数
 
     Args:
         output_file (str): 出力ファイルのパス
+
     """
     template_df = pd.DataFrame(
-        {"td_file": ["comparison/test/example.csv"], "output_file": ["output/example/temperature_data.csv"]}
+        {"td_file": ["comparison/test/example.csv"], "output_file": ["output/example/temperature_data.csv"]},
     )
     template_df.to_csv(output_file, index=False)
     print(f"設定テンプレートを作成しました: {output_file}")
@@ -184,7 +182,7 @@ def main():
     single_parser.add_argument("td_file", help="comparison/td/配下のCSVファイルパス")
     single_parser.add_argument("output_file", help="output/配下の解析結果フォルダ内のtemperature_data.csvファイルパス")
     single_parser.add_argument(
-        "--output-dir", default="comparison", help="出力先ディレクトリ（デフォルト: comparison）"
+        "--output-dir", default="comparison", help="出力先ディレクトリ（デフォルト: comparison）",
     )
 
     # 複数の比較を一括実行するコマンド

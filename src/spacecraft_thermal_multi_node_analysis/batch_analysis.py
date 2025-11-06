@@ -2,17 +2,16 @@ import argparse
 import os
 import subprocess
 from datetime import datetime
-from typing import Dict, List
 
 import pandas as pd
 
 
 def create_analysis_config_template(output_file: str = "analysis_config_template.csv"):
-    """
-    解析設定のテンプレートファイルを作成する関数
+    """解析設定のテンプレートファイルを作成する関数
 
     Args:
         output_file (str): 出力ファイルのパス
+
     """
     template_df = pd.DataFrame(
         {
@@ -26,21 +25,21 @@ def create_analysis_config_template(output_file: str = "analysis_config_template
             "num_orbits": [None],  # 周回数（指定時はdurationより優先）
             "temp_grid_interval": [5.0],  # 温度データの出力間隔 [秒]
             "output_dir": ["output"],  # 出力ディレクトリ
-        }
+        },
     )
     template_df.to_csv(output_file, index=False)
     print(f"解析設定テンプレートを作成しました: {output_file}")
 
 
-def load_analysis_config(config_file: str) -> List[Dict]:
-    """
-    解析設定を読み込む関数
+def load_analysis_config(config_file: str) -> list[dict]:
+    """解析設定を読み込む関数
 
     Args:
         config_file (str): 解析設定CSVファイルのパス
 
     Returns:
         List[Dict]: 解析設定のリスト
+
     """
     config_df = pd.read_csv(config_file)
     required_columns = ["mode", "duration", "output_dir"]
@@ -54,15 +53,15 @@ def load_analysis_config(config_file: str) -> List[Dict]:
     return configs
 
 
-def write_analysis_log(log_file: str, config: Dict, status: str, error_msg: str = None):
-    """
-    解析実行のログを記録する関数
+def write_analysis_log(log_file: str, config: dict, status: str, error_msg: str = None):
+    """解析実行のログを記録する関数
 
     Args:
         log_file (str): ログファイルのパス
         config (Dict): 解析設定
         status (str): 実行状態（'success' または 'error'）
         error_msg (str, optional): エラーメッセージ
+
     """
     # ログファイルのパスを絶対パスに変換
     log_file = os.path.abspath(log_file)
@@ -89,9 +88,8 @@ def write_analysis_log(log_file: str, config: Dict, status: str, error_msg: str 
         f.write("-" * 50 + "\n")
 
 
-def execute_analysis(config: Dict, log_file: str) -> bool:
-    """
-    単一の解析を実行する関数
+def execute_analysis(config: dict, log_file: str) -> bool:
+    """単一の解析を実行する関数
 
     Args:
         config (Dict): 解析設定
@@ -99,6 +97,7 @@ def execute_analysis(config: Dict, log_file: str) -> bool:
 
     Returns:
         bool: 実行が成功したかどうか
+
     """
     # コマンドライン引数の構築
     cmd = ["multi-node-analysis"]
@@ -137,12 +136,12 @@ def execute_analysis(config: Dict, log_file: str) -> bool:
 
 
 def batch_analysis(config_file: str, log_file: str = "analysis_log.log"):
-    """
-    複数の解析を一括実行する関数
+    """複数の解析を一括実行する関数
 
     Args:
         config_file (str): 解析設定CSVファイルのパス
         log_file (str): ログファイルのパス
+
     """
     # 設定の読み込み
     configs = load_analysis_config(config_file)

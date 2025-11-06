@@ -1,13 +1,11 @@
-from typing import Tuple
 
 import numpy as np
 
 
 def calculate_orbit_parameters(
-    altitude: float, beta_angle: float
-) -> Tuple[float, float, float, np.ndarray, np.ndarray, np.ndarray]:
-    """
-    軌道パラメータを計算
+    altitude: float, beta_angle: float,
+) -> tuple[float, float, float, np.ndarray, np.ndarray, np.ndarray]:
+    """軌道パラメータを計算
 
     Args:
         altitude: 軌道高度 [km]
@@ -20,6 +18,7 @@ def calculate_orbit_parameters(
         orbit_normal: 軌道面の法線ベクトル
         e1: 軌道面内の第1基底ベクトル
         e2: 軌道面内の第2基底ベクトル
+
     """
     earth_radius = 6378.0  # 地球半径 [km]
     mu = 3.986e5  # 地球の重力定数 [km^3/s^2]
@@ -71,9 +70,8 @@ def calculate_orbit_parameters(
     return period, eclipse_fraction, beta_rad, orbit_normal, e1, e2
 
 
-def calculate_earth_parameters(altitude: float, time: float, period: float) -> Tuple[np.ndarray, float]:
-    """
-    地球の位置とビューファクターを計算
+def calculate_earth_parameters(altitude: float, time: float, period: float) -> tuple[np.ndarray, float]:
+    """地球の位置とビューファクターを計算
 
     Args:
         altitude: 軌道高度 [km]
@@ -83,6 +81,7 @@ def calculate_earth_parameters(altitude: float, time: float, period: float) -> T
     Returns:
         earth_vector: 地球方向ベクトル
         view_factor: 地球のビューファクター
+
     """
     earth_radius = 6378.0  # 地球半径 [km]
     a = earth_radius + altitude  # 軌道長半径 [km]
@@ -98,10 +97,9 @@ def calculate_earth_parameters(altitude: float, time: float, period: float) -> T
 
 
 def calculate_satellite_position(
-    time: float, period: float, altitude: float, orbit_normal: np.ndarray, e1: np.ndarray, e2: np.ndarray
-) -> Tuple[np.ndarray, np.ndarray, bool]:
-    """
-    衛星の位置ベクトル・速度ベクトルと蝕の状態を計算
+    time: float, period: float, altitude: float, orbit_normal: np.ndarray, e1: np.ndarray, e2: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, bool]:
+    """衛星の位置ベクトル・速度ベクトルと蝕の状態を計算
     Returns:
         position: 衛星の位置ベクトル [km]
         velocity: 衛星の速度ベクトル [km/s]
@@ -134,8 +132,7 @@ def calculate_satellite_attitude(
     *,
     debug: bool = False,
 ) -> np.ndarray:
-    """
-    LVLH基準で衛星の姿勢行列を構築
+    """LVLH基準で衛星の姿勢行列を構築
 
     Args:
         position: 衛星の位置ベクトル
@@ -144,6 +141,7 @@ def calculate_satellite_attitude(
 
     Returns:
         rotation_matrix: 姿勢行列
+
     """
     # 基準となるベクトルを計算
     nadir = -position / np.linalg.norm(position)  # 地球方向
@@ -211,7 +209,7 @@ def calculate_satellite_attitude(
     if debug:
         print(f"[DEBUG_ATT] PX: {px}, PY: {py}, PZ: {pz}")
         print(
-            f"[DEBUG_ATT] 直交性: PX・PY={np.dot(px, py):.3e}, PY・PZ={np.dot(py, pz):.3e}, PZ・PX={np.dot(pz, px):.3e}"
+            f"[DEBUG_ATT] 直交性: PX・PY={np.dot(px, py):.3e}, PY・PZ={np.dot(py, pz):.3e}, PZ・PX={np.dot(pz, px):.3e}",
         )
         print(f"[DEBUG_ATT] det(R): {np.linalg.det(rotation_matrix):.6f}")
 
@@ -219,10 +217,9 @@ def calculate_satellite_attitude(
 
 
 def calculate_sun_vector_in_satellite_frame(
-    time: float, period: float, beta_angle: float, rotation_matrix: np.ndarray
+    time: float, period: float, beta_angle: float, rotation_matrix: np.ndarray,
 ) -> np.ndarray:
-    """
-    衛星固定座標系での太陽方向ベクトルを計算
+    """衛星固定座標系での太陽方向ベクトルを計算
     """
     # 軌道座標系での太陽方向ベクトル（ベータ角90度ならX方向）
     sun_vector_orbit = np.array([1.0, 0.0, 0.0])
@@ -232,8 +229,7 @@ def calculate_sun_vector_in_satellite_frame(
 
 
 def calculate_earth_ir_view_factor(earth_vector: np.ndarray, normal_vector: np.ndarray, altitude: float) -> float:
-    """
-    地球赤外用のビューファクターを計算
+    """地球赤外用のビューファクターを計算
 
     Args:
         earth_vector: 地球方向ベクトル（正規化されていない）
@@ -242,6 +238,7 @@ def calculate_earth_ir_view_factor(earth_vector: np.ndarray, normal_vector: np.n
 
     Returns:
         view_factor: 地球赤外用のビューファクター
+
     """
     earth_radius = 6378.0  # 地球半径 [km]
 
@@ -269,12 +266,11 @@ def calculate_earth_ir_view_factor(earth_vector: np.ndarray, normal_vector: np.n
             )
         else:
             view_factor = 0.0
-    else:  # 1732 km以上の場合
-        if lamda < np.pi / 2.0:
-            # 立体角として考慮
-            view_factor = 0.25 / (H * H)
-        else:
-            view_factor = 0.0
+    elif lamda < np.pi / 2.0:
+        # 立体角として考慮
+        view_factor = 0.25 / (H * H)
+    else:
+        view_factor = 0.0
 
     return view_factor
 
@@ -286,8 +282,7 @@ def calculate_albedo_view_factor(
     altitude: float,
     orbit_normal: np.ndarray,
 ) -> float:
-    """
-    アルベド用のビューファクターを計算
+    """アルベド用のビューファクターを計算
 
     Args:
         earth_vector: 地球方向ベクトル（正規化されていない）
@@ -298,6 +293,7 @@ def calculate_albedo_view_factor(
 
     Returns:
         view_factor: アルベド用のビューファクター
+
     """
     earth_radius = 6378.0  # 地球半径 [km]
 
@@ -335,12 +331,11 @@ def calculate_albedo_view_factor(
             )
         else:
             view_factor = 0.0
-    else:  # 1732 km以上の場合
-        if lamda < np.pi / 2.0:
-            # 立体角として考慮
-            view_factor = 0.25 / (H * H)
-        else:
-            view_factor = 0.0
+    elif lamda < np.pi / 2.0:
+        # 立体角として考慮
+        view_factor = 0.25 / (H * H)
+    else:
+        view_factor = 0.0
 
     # β角の計算（ラジアン）
     beta_angle = np.arccos(np.clip(np.dot(orbit_normal, sun_vector), -1.0, 1.0))
