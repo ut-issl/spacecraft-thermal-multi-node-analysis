@@ -153,7 +153,7 @@ def batch_compare(config_file: str, output_dir: str = "comparison") -> list[str]
         try:
             output_path = compare_temperature_data(config["td_file"], config["output_file"], output_dir)
             output_paths.append(output_path)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"エラー: {config['td_file']} と {config['output_file']} の比較中にエラーが発生しました: {e!s}")
 
     return output_paths
@@ -182,7 +182,9 @@ def main():
     single_parser.add_argument("td_file", help="comparison/td/配下のCSVファイルパス")
     single_parser.add_argument("output_file", help="output/配下の解析結果フォルダ内のtemperature_data.csvファイルパス")
     single_parser.add_argument(
-        "--output-dir", default="comparison", help="出力先ディレクトリ（デフォルト: comparison）",
+        "--output-dir",
+        default="comparison",
+        help="出力先ディレクトリ（デフォルト: comparison）",
     )
 
     # 複数の比較を一括実行するコマンド

@@ -56,7 +56,7 @@ ignore = [
   # "RUF",
   # "EXE",
   "S",
-  "BLE",
+  # "BLE",
   "PD",
   "PLC",
   # === The following rules are intentionally ignored
