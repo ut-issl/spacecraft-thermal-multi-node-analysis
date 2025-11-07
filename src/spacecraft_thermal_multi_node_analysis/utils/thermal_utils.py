@@ -401,7 +401,7 @@ class ThermalNode:
             interpanel_heat[name] = q
         return interpanel_heat
 
-    def set_conductance_matrix(self, matrix: pd.DataFrame, enable: bool):
+    def set_conductance_matrix(self, matrix: pd.DataFrame | None, enable: bool):
         """コンダクタンス行列を設定"""
         self.conductance_matrix = matrix
         self.enable_conductance = enable

@@ -134,7 +134,6 @@ def run_earth_orbit_analysis(
         node.add_component(component)
 
     # コンダクタンス行列の設定
-    assert config.conductance_matrix is not None
     node.set_conductance_matrix(config.conductance_matrix, config.enable_conductance)
 
     # 温度履歴の記録
