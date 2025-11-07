@@ -89,13 +89,10 @@ log/
 *.gz
 *.zip
 *.tar
-*.tar.gz 
+*.tar.gz
 
 # rye
 *.lock
-
-# output
-output/
 
 # comparison
 comparison/

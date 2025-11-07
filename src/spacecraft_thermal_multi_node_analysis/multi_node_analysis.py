@@ -364,6 +364,13 @@ def main():
         output_subdir = f"earth_orbit_alt{altitude:.1f}_beta{beta_angle:.1f}"
         output_path = os.path.join(args.output_dir, output_subdir)
         os.makedirs(output_path, exist_ok=True)
+
+        # Create a .gitignore file inside the output directory to ignore all files
+        gitignore_path = os.path.join(args.output_dir, ".gitignore")
+        if not os.path.exists(gitignore_path):
+            with open(gitignore_path, "w") as gitignore_file:
+                gitignore_file.write("*\n")
+
         # 設定ファイルのコピー
         copy_settings_files(output_path)
 
