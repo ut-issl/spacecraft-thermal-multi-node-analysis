@@ -82,7 +82,7 @@ log/
 .env.production.local
 
 # Data files
-*.csv
+#*.csv
 *.dat
 *.out
 *.pid
@@ -99,3 +99,6 @@ comparison/
 
 # settings
 !settings/cij_matrix.csv
+
+# config template
+analysis_config_template.csv
