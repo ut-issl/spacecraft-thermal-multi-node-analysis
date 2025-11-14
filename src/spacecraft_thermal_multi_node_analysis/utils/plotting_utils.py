@@ -178,11 +178,7 @@ def plot_temperature_profile(
         )
 
 
-def save_temperature_data(
-    times: list[float],
-    temperatures: dict[str, list[float]],
-    output_dir: str,
-):
+def save_temperature_data(times: list[float], temperatures: dict[str, list[float]], output_dir: str):
     """Save temperature data to CSV file
 
     Args:
