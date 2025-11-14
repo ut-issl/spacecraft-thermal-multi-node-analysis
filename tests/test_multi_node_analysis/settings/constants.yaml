@@ -29,9 +29,8 @@ satellite_attitude:
   # 地球周回軌道での姿勢制御モード
   # 第1軸と第2軸の向きを指定
   earth_orbit_mode:
-    # 第1軸の向き（PZ軸）
     primary_axis:
-      "sun_pointing"
+      "sun_pointing" # 第1軸の向き（PZ軸）
       # 選択肢: "sun_pointing", "nadir_pointing", "velocity_vector", "custom"
     secondary_axis: # 第2軸の設定
       axis: "PY" # 第2軸の選択（"PX"または"PY"）

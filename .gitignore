@@ -82,23 +82,23 @@ log/
 .env.production.local
 
 # Data files
-*.csv
+#*.csv
 *.dat
 *.out
 *.pid
 *.gz
 *.zip
 *.tar
-*.tar.gz 
+*.tar.gz
 
 # rye
-*.lock
-
-# output
-output/
+#*.lock
 
 # comparison
 comparison/
 
 # settings
 !settings/cij_matrix.csv
+
+# config template
+analysis_config_template.csv

@@ -1,18 +1,21 @@
 import argparse
+import logging
 import os
 import subprocess
 from datetime import datetime
-from typing import Dict, List
 
 import pandas as pd
+from rich.logging import RichHandler
+
+logger = logging.getLogger(__name__)
 
 
 def create_analysis_config_template(output_file: str = "analysis_config_template.csv"):
-    """
-    解析設定のテンプレートファイルを作成する関数
+    """解析設定のテンプレートファイルを作成する関数
 
     Args:
         output_file (str): 出力ファイルのパス
+
     """
     template_df = pd.DataFrame(
         {
@@ -26,21 +29,21 @@ def create_analysis_config_template(output_file: str = "analysis_config_template
             "num_orbits": [None],  # 周回数（指定時はdurationより優先）
             "temp_grid_interval": [5.0],  # 温度データの出力間隔 [秒]
             "output_dir": ["output"],  # 出力ディレクトリ
-        }
+        },
     )
     template_df.to_csv(output_file, index=False)
-    print(f"解析設定テンプレートを作成しました: {output_file}")
+    logger.info(f"解析設定テンプレートを作成しました: {output_file}")
 
 
-def load_analysis_config(config_file: str) -> List[Dict]:
-    """
-    解析設定を読み込む関数
+def load_analysis_config(config_file: str) -> list[dict]:
+    """解析設定を読み込む関数
 
     Args:
         config_file (str): 解析設定CSVファイルのパス
 
     Returns:
         List[Dict]: 解析設定のリスト
+
     """
     config_df = pd.read_csv(config_file)
     required_columns = ["mode", "duration", "output_dir"]
@@ -54,19 +57,19 @@ def load_analysis_config(config_file: str) -> List[Dict]:
     return configs
 
 
-def write_analysis_log(log_file: str, config: Dict, status: str, error_msg: str = None):
-    """
-    解析実行のログを記録する関数
+def write_analysis_log(log_file: str, config: dict, status: str, error_msg: str | None = None):
+    """解析実行のログを記録する関数
 
     Args:
         log_file (str): ログファイルのパス
         config (Dict): 解析設定
         status (str): 実行状態（'success' または 'error'）
         error_msg (str, optional): エラーメッセージ
+
     """
     # ログファイルのパスを絶対パスに変換
     log_file = os.path.abspath(log_file)
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # noqa: DTZ005
     log_dir = os.path.dirname(log_file)
     os.makedirs(log_dir, exist_ok=True)
 
@@ -89,9 +92,8 @@ def write_analysis_log(log_file: str, config: Dict, status: str, error_msg: str 
         f.write("-" * 50 + "\n")
 
 
-def execute_analysis(config: Dict, log_file: str) -> bool:
-    """
-    単一の解析を実行する関数
+def execute_analysis(config: dict, log_file: str) -> bool:
+    """単一の解析を実行する関数
 
     Args:
         config (Dict): 解析設定
@@ -99,9 +101,10 @@ def execute_analysis(config: Dict, log_file: str) -> bool:
 
     Returns:
         bool: 実行が成功したかどうか
+
     """
     # コマンドライン引数の構築
-    cmd = ["python", "multi-node_analysis.py"]
+    cmd = ["multi-node-analysis"]
 
     # モードに応じた引数の設定
     cmd.extend(["--mode", config["mode"]])
@@ -127,22 +130,22 @@ def execute_analysis(config: Dict, log_file: str) -> bool:
         # 解析の実行
         _result = subprocess.run(cmd, check=True, capture_output=True, text=True)
         write_analysis_log(log_file, config, "success")
-        print(f"解析が成功しました: {config['output_dir']}")
+        logger.info(f"解析が成功しました: {config['output_dir']}")
         return True
     except subprocess.CalledProcessError as e:
         error_msg = f"コマンド実行エラー: {e.stderr}"
         write_analysis_log(log_file, config, "error", error_msg)
-        print(f"エラー: {config['output_dir']} の解析中にエラーが発生しました: {error_msg}")
+        logger.info(f"エラー: {config['output_dir']} の解析中にエラーが発生しました: {error_msg}")
         return False
 
 
 def batch_analysis(config_file: str, log_file: str = "analysis_log.log"):
-    """
-    複数の解析を一括実行する関数
+    """複数の解析を一括実行する関数
 
     Args:
         config_file (str): 解析設定CSVファイルのパス
         log_file (str): ログファイルのパス
+
     """
     # 設定の読み込み
     configs = load_analysis_config(config_file)
@@ -154,11 +157,17 @@ def batch_analysis(config_file: str, log_file: str = "analysis_log.log"):
             success_count += 1
 
     # 実行結果のサマリー
-    print(f"\n解析実行完了: {success_count}/{len(configs)} 成功")
+    logger.info(f"解析実行完了: {success_count}/{len(configs)} 成功")
 
 
 def main():
     parser = argparse.ArgumentParser(description="複数の解析条件を一括実行します。")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="詳細なログを表示します。",
+    )
     subparsers = parser.add_subparsers(dest="command", help="実行するコマンド")
 
     # 解析設定のテンプレートを作成するコマンド
@@ -179,6 +188,13 @@ def main():
     )
 
     args = parser.parse_args()
+
+    log_level = logging.DEBUG if args.verbose else logging.INFO
+    pkg_handler = RichHandler(level=log_level)
+    pkg_logger = logging.getLogger("spacecraft_thermal_multi_node_analysis")
+    pkg_logger.setLevel(log_level)
+    pkg_logger.addHandler(pkg_handler)
+    pkg_logger.propagate = False
 
     if args.command == "create-template":
         create_analysis_config_template(args.output_file)

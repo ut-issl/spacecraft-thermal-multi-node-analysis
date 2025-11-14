@@ -1,6 +1,6 @@
+import logging
 import os
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -8,9 +8,16 @@ import pandas as pd
 from .config_loader import (
     load_constants,
 )
-from .dataclasses import ComponentProperties, HeatInputRecord, MaterialProperties, MLINode, SurfaceMaterial
+from .dataclasses import (
+    ComponentProperties,
+    HeatInputRecord,
+    MaterialProperties,
+    MLINode,
+    SurfaceMaterial,
+)
 from .orbit_utils import calculate_albedo_view_factor, calculate_earth_ir_view_factor
-from .satellite_config import SatelliteConfiguration
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -25,8 +32,8 @@ class PanelProperties:
 class SurfaceOpticalProperties:
     """面の表面光学特性"""
 
-    outside: List[Tuple[SurfaceMaterial, float]]  # (光学特性, 割合)のリスト（外側）
-    inside: List[Tuple[SurfaceMaterial, float]]  # (光学特性, 割合)のリスト（内側）
+    outside: list[tuple[SurfaceMaterial, float]]  # (光学特性, 割合)のリスト（外側）
+    inside: list[tuple[SurfaceMaterial, float]]  # (光学特性, 割合)のリスト（内側）
 
 
 @dataclass
@@ -38,14 +45,16 @@ class Surface:
     area: float  # m^2
     panel: PanelProperties  # パネルの熱物性
     optical_properties: SurfaceOpticalProperties  # 表面光学特性
-    initial_temp: float = None  # 初期温度 [K]
+    initial_temp: float | None = None  # 初期温度 [K]
     has_mli: bool = False  # MLIが装着されているかどうか
-    mli_node: Optional[MLINode] = None  # MLIノード（MLI装着時のみ使用）
+    mli_node: MLINode | None = None  # MLIノード（MLI装着時のみ使用）
 
     def __post_init__(self):
         """MLIの有無を判定し、MLIノードを初期化"""
         # 初期温度が設定されていない場合は設定ファイルから読み込む
         if self.initial_temp is None:
+            # We don't want to read from files here.
+            raise ValueError("`initial_temp` should be set!")
             constants = load_constants()
             # 設定ファイルにinitial_temperatureがない場合は293.15K（20℃）をデフォルト値として使用
             self.initial_temp = constants.get("initial_temperature", 293.15)
@@ -57,11 +66,11 @@ class Surface:
                 # MLIの放射率と実効放射率を取得
                 if optical_props.epsilon is None:
                     raise ValueError(
-                        "MLIの放射率が設定されていません。surface_properties.yamlでMLIのepsilonを設定してください。"
+                        "MLIの放射率が設定されていません。surface_properties.yamlでMLIのepsilonを設定してください。",
                     )
                 if optical_props.effective_emissivity is None:
                     raise ValueError(
-                        "MLIの実効放射率が設定されていません。surface_properties.yamlでMLIのeffective_emissivityを設定してください。"
+                        "MLIの実効放射率が設定されていません。surface_properties.yamlでMLIのeffective_emissivityを設定してください。",
                     )
 
                 self.mli_node = MLINode(
@@ -83,7 +92,12 @@ class Surface:
         heat_capacity = mass * self.panel.material.specific_heat
         return heat_capacity
 
-    def calculate_solar_heat(self, sun_vector: np.ndarray, solar_constant: float, in_eclipse: bool = False) -> float:
+    def calculate_solar_heat(
+        self,
+        sun_vector: np.ndarray,
+        solar_constant: float,
+        in_eclipse: bool = False,
+    ) -> float:
         """太陽熱を計算 [W]"""
         if in_eclipse:
             return 0.0
@@ -105,9 +119,8 @@ class Surface:
         altitude: float,
         sun_vector: np.ndarray,
         orbit_normal: np.ndarray,
-    ) -> Tuple[float, float]:
-        """
-        地球からの熱（アルベドと赤外）を計算 [W]
+    ) -> tuple[float, float]:
+        """地球からの熱（アルベドと赤外）を計算 [W]
 
         Args:
             earth_vector: 地球方向ベクトル
@@ -121,41 +134,57 @@ class Surface:
         Returns:
             albedo_heat: アルベド熱 [W]
             earth_ir_heat: 地球赤外熱 [W]
+
         """
         albedo_heat = 0.0
         earth_ir_heat = 0.0
 
         # 地球赤外は等方的な放射なので、面の向きに関係なく計算
         for optical_props, ratio in self.optical_properties.outside:
-            ir_view_factor = calculate_earth_ir_view_factor(earth_vector, self.normal, altitude)
+            ir_view_factor = calculate_earth_ir_view_factor(
+                earth_vector,
+                self.normal,
+                altitude,
+            )
             earth_ir_heat += earth_ir * self.area * optical_props.epsilon * ir_view_factor * ratio
 
         # アルベドは太陽光の反射なので、新しいビューファクター計算を使用
         for optical_props, ratio in self.optical_properties.outside:
             albedo_view_factor = calculate_albedo_view_factor(
-                earth_vector, sun_vector, self.normal, altitude, orbit_normal
+                earth_vector,
+                sun_vector,
+                self.normal,
+                altitude,
+                orbit_normal,
             )
             albedo_heat += solar_constant * earth_albedo * self.area * optical_props.alpha * albedo_view_factor * ratio
 
         return albedo_heat, earth_ir_heat
 
 
-@dataclass
+# @dataclass <- ?
 class ViewFactorMatrix:
     """パネル間のビューファクター行列を管理するクラス"""
 
-    matrix: np.ndarray  # ビューファクター行列
-    surface_names: List[str]  # 面の名前リスト
-    dimensions: Dict[str, float]  # 衛星の寸法
+    # matrix: np.ndarray  # ビューファクター行列
+    # surface_names: List[str]  # 面の名前リスト
+    # dimensions: Dict[str, float]  # 衛星の寸法
 
-    def __init__(self, surfaces: Dict[str, Surface], dimensions: Dict[str, float]):
+    def __init__(
+        self,
+        surfaces: dict[str, Surface],
+        dimensions: dict[str, float],
+    ):
         self.surface_names = list(surfaces.keys())
         self.dimensions = dimensions
         n = len(self.surface_names)
         self.matrix = np.zeros((n, n))
         self._calculate_view_factors(surfaces)
 
-    def _calculate_view_factors(self, surfaces: Dict[str, Surface]):
+    def _calculate_view_factors(
+        self,
+        surfaces: dict[str, Surface],
+    ):
         """各面間のビューファクターを計算"""
         for i, name_i in enumerate(self.surface_names):
             surface_i = surfaces[name_i]
@@ -165,11 +194,17 @@ class ViewFactorMatrix:
 
                 surface_j = surfaces[name_j]
                 # 面iから面jへのビューファクターを計算
-                self.matrix[i, j] = self._calculate_view_factor(surface_i, surface_j)
+                self.matrix[i, j] = self._calculate_view_factor(
+                    surface_i,
+                    surface_j,
+                )
 
-    def _calculate_view_factor(self, surface_i: Surface, surface_j: Surface) -> float:
-        """
-        2つの面間のビューファクターを解析解で計算
+    def _calculate_view_factor(
+        self,
+        surface_i: Surface,
+        surface_j: Surface,
+    ) -> float:
+        """2つの面間のビューファクターを解析解で計算
 
         Args:
             surface_i: 面i
@@ -177,6 +212,7 @@ class ViewFactorMatrix:
 
         Returns:
             view_factor: 面iから面jへのビューファクター
+
         """
         # 面の法線ベクトル
         ni = surface_i.normal
@@ -186,16 +222,20 @@ class ViewFactorMatrix:
         dot_product = np.dot(ni, nj)
 
         if abs(dot_product) == 1.0:  # 対向面（平行）
-            return self._calculate_parallel_view_factor(surface_i, surface_j)
-        elif abs(dot_product) == 0.0:  # 隣接面（垂直）
+            return self._calculate_parallel_view_factor(
+                surface_i,
+                surface_j,
+            )
+        if abs(dot_product) == 0.0:  # 隣接面（垂直）
             return self._calculate_perpendicular_view_factor(surface_i, surface_j)
-        else:
-            return 0.0  # その他の面は直接見えない
+        return 0.0  # その他の面は直接見えない
 
-    def _calculate_perpendicular_view_factor(self, surface_i: Surface, surface_j: Surface) -> float:
-        """
-        直交し1辺を共有する長方形面間のビューファクター（厳密解）
-        """
+    def _calculate_perpendicular_view_factor(
+        self,
+        surface_i: Surface,
+        surface_j: Surface,
+    ) -> float:
+        """直交し1辺を共有する長方形面間のビューファクター（厳密解）"""
         dims = self.dimensions
         Lx = dims["length_x"] * 1e-3
         Ly = dims["length_y"] * 1e-3
@@ -242,9 +282,12 @@ class ViewFactorMatrix:
         F12 = (1 / (np.pi * W)) * (term1 + term2)
         return max(0.0, F12)
 
-    def _calculate_parallel_view_factor(self, surface_i: Surface, surface_j: Surface) -> float:
-        """
-        平行な長方形面間のビューファクターを計算
+    def _calculate_parallel_view_factor(
+        self,
+        surface_i: Surface,
+        surface_j: Surface,
+    ) -> float:
+        """平行な長方形面間のビューファクターを計算
 
         Args:
             surface_i: 面i
@@ -252,6 +295,7 @@ class ViewFactorMatrix:
 
         Returns:
             view_factor: 面iから面jへのビューファクター
+
         """
         # 衛星の寸法を取得
         Lx = self.dimensions["length_x"] * 1e-3  # mm to m
@@ -282,12 +326,12 @@ class ViewFactorMatrix:
         Y = b / d
 
         # デバッグ出力
-        debug_flag = load_constants().get("debug", False)
-        if debug_flag:
-            print(f"Parallel View Factor Calculation for {surface_i.name}->{surface_j.name}:")
-            print(f"  Dimensions: a={a:.3e}m, b={b:.3e}m, d={d:.3e}m")
-            print(f"  Normal vectors: ni={surface_i.normal}, nj={surface_j.normal}")
-            print(f"  Non-dimensional parameters: X={X:.3f}, Y={Y:.3f}")
+        logger.debug(
+            f"Parallel View Factor Calculation for {surface_i.name}->{surface_j.name}:",
+        )
+        logger.debug(f"  Dimensions: a={a:.3e}m, b={b:.3e}m, d={d:.3e}m")
+        logger.debug(f"  Normal vectors: ni={surface_i.normal}, nj={surface_j.normal}")
+        logger.debug(f"  Non-dimensional parameters: X={X:.3f}, Y={Y:.3f}")
 
         # 解析解によるビューファクター計算
         # F12 = (2/(πXY)) * (ln(sqrt((1+X^2)(1+Y^2)/(1+X^2+Y^2)) + X*sqrt(1+Y^2)arctan(X/sqrt(1+Y^2)) + Y*sqrt(1+X^2)arctan(Y/sqrt(1+X^2)) - X*arctan(X) - Y*arctan(Y))
@@ -300,11 +344,10 @@ class ViewFactorMatrix:
         F12 = (2 / (np.pi * X * Y)) * (term1 + term2 + term3 - term4 - term5)
 
         # デバッグ出力（計算過程）
-        if debug_flag:
-            print(
-                f"  Terms: term1={term1:.3f}, term2={term2:.3f}, term3={term3:.3f}, term4={term4:.3f}, term5={term5:.3f}"
-            )
-            print(f"  Final view factor: F12={F12:.3f}")
+        logger.debug(
+            f"  Terms: term1={term1:.3f}, term2={term2:.3f}, term3={term3:.3f}, term4={term4:.3f}, term5={term5:.3f}",
+        )
+        logger.debug(f"  Final view factor: F12={F12:.3f}")
 
         return F12
 
@@ -315,31 +358,34 @@ class ViewFactorMatrix:
         return self.matrix[i, j]
 
     def to_csv(self, filepath: str):
-        """
-        ビューファクター行列をCSVファイルとして出力
+        """ビューファクター行列をCSVファイルとして出力
         行・列ともに面名ラベル付き
         """
-        df = pd.DataFrame(self.matrix, index=self.surface_names, columns=self.surface_names)
+        df = pd.DataFrame(
+            self.matrix,
+            index=self.surface_names,
+            columns=self.surface_names,
+        )
         df.to_csv(filepath)
 
 
-@dataclass
+# @dataclass <- ?
 class ThermalNode:
-    def __init__(self, initial_temp: float):
-        self.surfaces: Dict[str, Surface] = {}
-        self.temperatures: Dict[str, float] = {}
-        self.heat_input_records: List[HeatInputRecord] = []
-        self.internal_heat: Dict[str, float] = {}
-        self.view_factor_matrix: Optional[ViewFactorMatrix] = None
-        self.dimensions: Dict[str, float] = {}
+    def __init__(self, initial_temp: float, dimensions: dict[str, float]):
+        self.surfaces: dict[str, Surface] = {}
+        self.temperatures: dict[str, float] = {}
+        self.heat_input_records: list[HeatInputRecord] = []
+        self.internal_heat: dict[str, float] = {}
+        self.view_factor_matrix: ViewFactorMatrix | None = None
+        self.dimensions: dict[str, float] = dimensions
         self._rij_cache = None
         self._rij_names = None
         self.initial_temp = initial_temp
-        self.conductance_matrix: Optional[pd.DataFrame] = None
+        self.conductance_matrix: pd.DataFrame | None = None
         self.enable_conductance: bool = False
         # コンポーネント関連の属性を追加
-        self.components: Dict[str, ComponentProperties] = {}
-        self.component_temperatures: Dict[str, float] = {}
+        self.components: dict[str, ComponentProperties] = {}
+        self.component_temperatures: dict[str, float] = {}
 
     def add_surface(self, surface: Surface):
         """面を追加し、初期温度を設定"""
@@ -348,13 +394,18 @@ class ThermalNode:
         self.internal_heat[surface.name] = 0.0
         # 衛星の寸法を取得
         if not self.dimensions:
+            raise ValueError("`dimensions` should be set!")
             self.dimensions = load_constants()["satellite_dimensions"]
         # 面が追加されたらビューファクター行列を再計算
-        self.view_factor_matrix = ViewFactorMatrix(self.surfaces, self.dimensions)
+        self.view_factor_matrix = ViewFactorMatrix(
+            self.surfaces,
+            self.dimensions,
+        )
         # Rijキャッシュもリセット
         self._rij_cache = None
         self._rij_names = None
         if surface.has_mli:
+            assert surface.mli_node is not None
             # MLIノードの温度も初期化
             surface.mli_node.temperature = self.initial_temp
 
@@ -370,15 +421,19 @@ class ThermalNode:
             raise ValueError(f"面 {surface_name} は存在しません")
         return self.surfaces[surface_name].calculate_heat_capacity()
 
-    def calculate_interpanel_radiation(self, stefan_boltzmann: float) -> Dict[str, float]:
-        """
-        Rij（放射伝達行列）を用いた厳密な熱輻射計算（宇宙放射含む）
-        """
+    def calculate_interpanel_radiation(
+        self,
+        stefan_boltzmann: float,
+    ) -> dict[str, float]:
+        """Rij（放射伝達行列）を用いた厳密な熱輻射計算（宇宙放射含む）"""
         # Rij, node_namesをキャッシュ
         if self._rij_cache is None or self._rij_names is None:
             from .thermal_utils import calculate_radiative_conductance_matrix
 
-            self._rij_cache, self._rij_names = calculate_radiative_conductance_matrix(self.surfaces, self.dimensions)
+            self._rij_cache, self._rij_names = calculate_radiative_conductance_matrix(
+                self.surfaces,
+                self.dimensions,
+            )
         Rij = self._rij_cache
         _node_names = self._rij_names
         n = len(self.surfaces)
@@ -397,20 +452,20 @@ class ThermalNode:
             interpanel_heat[name] = q
         return interpanel_heat
 
-    def set_conductance_matrix(self, matrix: pd.DataFrame, enable: bool):
+    def set_conductance_matrix(self, matrix: pd.DataFrame | None, enable: bool):
         """コンダクタンス行列を設定"""
         self.conductance_matrix = matrix
         self.enable_conductance = enable
 
-    def calculate_conductance_heat(self) -> Dict[str, float]:
-        """
-        コンダクタンスによる熱伝導を計算
+    def calculate_conductance_heat(self) -> dict[str, float]:
+        """コンダクタンスによる熱伝導を計算
 
         Returns:
             Dict[str, float]: 各面のコンダクタンスによる熱収支 [W]
+
         """
         if not self.enable_conductance or self.conductance_matrix is None:
-            return {name: 0.0 for name in self.surfaces.keys()}
+            return dict.fromkeys(self.surfaces.keys(), 0.0)
 
         conductance_heat = {}
         for surface_name in self.surfaces.keys():
@@ -418,7 +473,7 @@ class ThermalNode:
             for other_name in self.surfaces.keys():
                 if surface_name != other_name:
                     # Cij * (Tj - Ti) の形式で計算
-                    cij = self.conductance_matrix.loc[surface_name, other_name]
+                    cij = float(self.conductance_matrix.loc[surface_name, other_name])
                     temp_diff = self.temperatures[other_name] - self.temperatures[surface_name]
                     heat += cij * temp_diff
             conductance_heat[surface_name] = heat
@@ -428,14 +483,14 @@ class ThermalNode:
     def calculate_heat_balance(
         self,
         sun_vector: np.ndarray,
-        earth_vector: np.ndarray = None,
+        constants: dict,
+        earth_vector: np.ndarray | None = None,
         in_eclipse: bool = False,
         time: float = 0.0,
-        altitude: float = None,
-        orbit_normal: np.ndarray = None,
-    ) -> Dict[str, float]:
+        altitude: float | None = None,
+        orbit_normal: np.ndarray | None = None,
+    ) -> dict[str, float]:
         """各面の熱収支を計算（パネル間輻射をRijで最適化）"""
-        constants = load_constants()
         solar_constant = constants["physical_constants"]["solar_constant"]
         stefan_boltzmann = constants["physical_constants"]["stefan_boltzmann"]
         earth_albedo = constants["physical_constants"]["earth_albedo"]
@@ -444,7 +499,9 @@ class ThermalNode:
         enable_earth_ir = constants["physical_constants"]["enable_earth_ir"]
 
         # パネル間輻射（Rij法、宇宙放射含む）を一度だけ計算
-        interpanel_radiation = self.calculate_interpanel_radiation(stefan_boltzmann)
+        interpanel_radiation = self.calculate_interpanel_radiation(
+            stefan_boltzmann,
+        )
 
         # コンダクタンスによる熱伝導を計算
         conductance_heat = self.calculate_conductance_heat()
@@ -454,13 +511,25 @@ class ThermalNode:
         # 各面の熱収支を計算
         for surface_name, surface in self.surfaces.items():
             if surface.has_mli:
+                assert surface.mli_node is not None, "surface.mli_node should not be none if surface.has_mli is True."
+
                 # MLIが装着されている場合、外部熱入力はMLIノードに入る
-                solar_heat = surface.calculate_solar_heat(sun_vector, solar_constant, in_eclipse)
+                solar_heat = surface.calculate_solar_heat(
+                    sun_vector,
+                    solar_constant,
+                    in_eclipse,
+                )
                 albedo_heat = 0.0
                 earth_ir_heat = 0.0
                 if earth_vector is not None and (enable_albedo or enable_earth_ir):
                     albedo_heat, earth_ir_heat = surface.calculate_earth_heat(
-                        earth_vector, solar_constant, earth_albedo, earth_ir, altitude, sun_vector, orbit_normal
+                        earth_vector,
+                        solar_constant,
+                        earth_albedo,
+                        earth_ir,
+                        altitude,
+                        sun_vector,
+                        orbit_normal,
                     )
 
                 # MLIノードの熱収支を計算
@@ -497,12 +566,22 @@ class ThermalNode:
                 heat_balances[surface_name] = mli_surface_radiation + self.internal_heat.get(surface_name, 0.0)
             else:
                 # MLIがない場合は従来通りの計算
-                solar_heat = surface.calculate_solar_heat(sun_vector, solar_constant, in_eclipse)
+                solar_heat = surface.calculate_solar_heat(
+                    sun_vector,
+                    solar_constant,
+                    in_eclipse,
+                )
                 albedo_heat = 0.0
                 earth_ir_heat = 0.0
                 if earth_vector is not None and (enable_albedo or enable_earth_ir):
                     albedo_heat, earth_ir_heat = surface.calculate_earth_heat(
-                        earth_vector, solar_constant, earth_albedo, earth_ir, altitude, sun_vector, orbit_normal
+                        earth_vector,
+                        solar_constant,
+                        earth_albedo,
+                        earth_ir,
+                        altitude,
+                        sun_vector,
+                        orbit_normal,
                     )
 
                 # 面の熱収支を計算
@@ -536,13 +615,17 @@ class ThermalNode:
                     conductance_heat=conductance_heat.get(surface_name, 0.0),
                     total_heat=heat_balances[surface_name],
                     temperature=self.temperatures[surface_name],
-                )
+                ),
             )
 
         # パネル間輻射とコンダクタンスの計算と加算
         for surface_name in self.surfaces.keys():
-            heat_balances[surface_name] += interpanel_radiation.get(surface_name, 0.0) + conductance_heat.get(
-                surface_name, 0.0
+            heat_balances[surface_name] += interpanel_radiation.get(
+                surface_name,
+                0.0,
+            ) + conductance_heat.get(
+                surface_name,
+                0.0,
             )
 
         # コンポーネントの熱収支を計算
@@ -560,7 +643,11 @@ class ThermalNode:
 
         return heat_balances
 
-    def update_temperature(self, heat_balances: Dict[str, float], time_step: float) -> Dict[str, float]:
+    def update_temperature(
+        self,
+        heat_balances: dict[str, float],
+        time_step: float,
+    ) -> dict[str, float]:
         """各面とコンポーネントの温度を更新"""
         temperature_changes = {}
 
@@ -571,6 +658,7 @@ class ThermalNode:
                 total_heat_capacity = self.calculate_total_heat_capacity(surface_name)
 
                 if surface.has_mli:
+                    assert surface.mli_node is not None
                     # MLIノードの温度更新（既存のコード）
                     mli_heat_capacity = 1  # 0.1 J/K/m^2
                     mli_temp_change = (
@@ -578,7 +666,11 @@ class ThermalNode:
                     )
                     # 温度変化が大きすぎる場合は制限
                     max_temp_change = 100.0  # 最大温度変化 [K/step]
-                    mli_temp_change = np.clip(mli_temp_change, -max_temp_change, max_temp_change)
+                    mli_temp_change = np.clip(
+                        mli_temp_change,
+                        -max_temp_change,
+                        max_temp_change,
+                    )
                     surface.mli_node.temperature += mli_temp_change
 
                 # 面の温度更新
@@ -606,7 +698,7 @@ class ThermalNode:
             raise ValueError(f"面 {surface_name} は存在しません")
         return self.temperatures[surface_name]
 
-    def get_all_temperatures(self) -> Dict[str, float]:
+    def get_all_temperatures(self) -> dict[str, float]:
         """全面の温度を取得（MLIノードの温度も含む）"""
         temps = self.temperatures.copy()
         # MLIノードの温度も追加
@@ -615,7 +707,7 @@ class ThermalNode:
                 temps[f"{surface_name}_MLI"] = surface.mli_node.temperature
         return temps
 
-    def get_mli_temperature(self, surface_name: str) -> Optional[float]:
+    def get_mli_temperature(self, surface_name: str) -> float | None:
         """特定の面のMLIノードの温度を取得（MLIがない場合はNone）"""
         if surface_name not in self.surfaces:
             raise ValueError(f"面 {surface_name} は存在しません")
@@ -624,14 +716,20 @@ class ThermalNode:
             return surface.mli_node.temperature
         return None
 
-    def save_rij_matrix(self, output_dir: str, filename: str = "rij_matrix.csv"):
-        """
-        Rij（放射伝達行列）をCSVで出力
+    def save_rij_matrix(
+        self,
+        output_dir: str,
+        filename: str = "rij_matrix.csv",
+    ):
+        """Rij（放射伝達行列）をCSVで出力
         行・列ともに面名+SPACEラベル付き
         """
         from .thermal_utils import calculate_radiative_conductance_matrix
 
-        Rij, node_names = calculate_radiative_conductance_matrix(self.surfaces, self.dimensions)
+        Rij, node_names = calculate_radiative_conductance_matrix(
+            self.surfaces,
+            self.dimensions,
+        )
         df = pd.DataFrame(Rij, index=node_names, columns=node_names)
         os.makedirs(output_dir, exist_ok=True)
         df.to_csv(os.path.join(output_dir, filename))
@@ -640,7 +738,7 @@ class ThermalNode:
         """コンポーネントを追加し、初期温度を設定"""
         if component.mounting_panel not in self.surfaces:
             raise ValueError(
-                f"コンポーネント {component.name} の取り付けパネル {component.mounting_panel} が存在しません"
+                f"コンポーネント {component.name} の取り付けパネル {component.mounting_panel} が存在しません",
             )
         self.components[component.name] = component
         # コンポーネントの初期温度は取り付けパネルと同じ
@@ -653,62 +751,11 @@ class ThermalNode:
         return self.component_temperatures[component_name]
 
 
-def create_satellite_surfaces(config: SatelliteConfiguration) -> List[Surface]:
-    """衛星の各面を作成"""
-    dims = config.dimensions
-    surfaces = []
-
-    # 各面の法線ベクトルと面積を定義
-    surface_defs = [
-        ("PX", np.array([1, 0, 0]), dims["length_y"] * dims["length_z"]),  # +X
-        ("MX", np.array([-1, 0, 0]), dims["length_y"] * dims["length_z"]),  # -X
-        ("PY", np.array([0, 1, 0]), dims["length_x"] * dims["length_z"]),  # +Y
-        ("MY", np.array([0, -1, 0]), dims["length_x"] * dims["length_z"]),  # -Y
-        ("PZ", np.array([0, 0, 1]), dims["length_x"] * dims["length_y"]),  # +Z
-        ("MZ", np.array([0, 0, -1]), dims["length_x"] * dims["length_y"]),  # -Z
-    ]
-
-    for name, normal, area in surface_defs:
-        # パネルの材料構成を読み込み
-        panel_config = config.panel_material_assignments[name][0]  # パネルは単一材料
-        panel_material = config.material_properties[panel_config["material"]]
-        panel_thickness = panel_config["thickness"]
-
-        # 表面光学特性を読み込み
-        optical_configs = config.surface_optical_assignments[name]
-
-        # 外側の表面光学特性
-        outside_materials = []
-        for opt_config in optical_configs["outside"]:
-            opt_name = opt_config["material"]
-            ratio = opt_config["ratio"]
-            outside_materials.append((config.surface_materials[opt_name], ratio))
-
-        # 内側の表面光学特性
-        inside_materials = []
-        for opt_config in optical_configs["inside"]:
-            opt_name = opt_config["material"]
-            ratio = opt_config["ratio"]
-            inside_materials.append((config.surface_materials[opt_name], ratio))
-
-        surfaces.append(
-            Surface(
-                name=name,
-                normal=normal,
-                area=area * 1e-6,  # mm^2 to m^2
-                panel=PanelProperties(material=panel_material, thickness=panel_thickness),
-                optical_properties=SurfaceOpticalProperties(outside=outside_materials, inside=inside_materials),
-            )
-        )
-
-    return surfaces
-
-
 def calculate_radiative_conductance_matrix(
-    surfaces: Dict[str, Surface], dimensions: Dict[str, float]
-) -> Tuple[np.ndarray, List[str]]:
-    """
-    6面+宇宙ノードの7x7 Rij（放射伝達行列）を作成する。
+    surfaces: dict[str, Surface],
+    dimensions: dict[str, float],
+) -> tuple[np.ndarray, list[str]]:
+    """6面+宇宙ノードの7x7 Rij（放射伝達行列）を作成する。
     面ノード間のRijは「面積 x i面放射率 x Fij」で計算。
     面ノードと宇宙ノード間のRijも計算。
     MLIがついている面の場合、宇宙との輻射熱交換はMLIノードが行うため、
@@ -721,14 +768,14 @@ def calculate_radiative_conductance_matrix(
     """
     surface_names = list(surfaces.keys())
     n = len(surface_names)
-    node_names = surface_names + ["SPACE"]
+    node_names = [*surface_names, "SPACE"]
     Rij = np.zeros((n + 1, n + 1))
 
     vfm = ViewFactorMatrix(surfaces, dimensions)
     F = vfm.matrix  # shape=(n, n)
     A = np.array([surfaces[name].area for name in surface_names])
     epsilon_inside = np.array(
-        [sum(opt.epsilon * ratio for opt, ratio in surfaces[name].optical_properties.inside) for name in surface_names]
+        [sum(opt.epsilon * ratio for opt, ratio in surfaces[name].optical_properties.inside) for name in surface_names],
     )
 
     # 宇宙面を拡張

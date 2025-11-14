@@ -20,7 +20,7 @@ class SurfaceMaterial:
     alpha: float  # 太陽吸収率
     epsilon: float  # 放射率
     description: str
-    effective_emissivity: float = None  # MLIの場合の実効放射率（オプション）
+    effective_emissivity: float | None = None  # MLIの場合の実効放射率（オプション）
 
 
 @dataclass

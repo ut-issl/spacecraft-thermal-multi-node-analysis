@@ -1,0 +1,104 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+env:
+  UV_VERSION: "0.9.x"
+  UV_FROZEN: "1"
+  UV_NO_SYNC: "1"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ruff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+
+      - name: Install ruff
+        run: uv sync --only-group ruff
+
+      - name: Run ruff
+        run: uv run -- ruff check
+
+  # mypy:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v5
+
+  #     - name: Install uv
+  #       uses: astral-sh/setup-uv@v7
+  #       with:
+  #         version: ${{ env.UV_VERSION }}
+
+  #     - name: Set up Python
+  #       uses: actions/setup-python@v6
+  #       with:
+  #         python-version-file: .python-version
+
+  #     - name: Install the project
+  #       run: uv sync --no-dev --group typing
+
+  #     - name: Run mypy
+  #       run: uv run -- mypy .
+
+  pytest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+
+      - name: Install the project
+        run: uv sync --no-dev --group test
+
+      - name: Run pytest
+        run: uv run -- pytest # without coverage
+        # run: uv run -- coverage run -m pytest --import-mode importlib # with coverage
+
+      # The following steps are optional and can be uncommented if coverage reports are needed.
+
+      # - name: Generate coverage report
+      #   run: |
+      #     uv run -- coverage report -m
+      #     uv run -- coverage xml -o coverage/coverage.xml
+      #     uv run -- genbadge coverage -i coverage/coverage.xml -o coverage/badge.svg
+
+      # - name: Commit and push
+      #   if: github.event_name == 'pull_request'
+      #   uses: EndBug/add-and-commit@v9
+      #   with:
+      #     default_author: github_actions
+      #     message: "Update tox report"
+      #     push: "origin HEAD:${{ github.head_ref }} --force"
+
+  collect:
+    needs: [ruff, pytest]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Collect results
+        run: echo "All checks passed!"
