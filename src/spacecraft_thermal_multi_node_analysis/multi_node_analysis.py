@@ -1,8 +1,6 @@
-#!/usr/bin/env python3
 import argparse
 import os
 import shutil
-from typing import Dict, List, Tuple
 
 import numpy as np
 
@@ -31,7 +29,10 @@ from .utils.thermal_utils import (
 )
 
 
-def create_satellite_surfaces(config: SatelliteConfiguration, constants: dict) -> List[Surface]:
+def create_satellite_surfaces(
+    config: SatelliteConfiguration,
+    constants: dict,
+) -> list[Surface]:
     """衛星の各面を作成"""
     dims = config.dimensions
     surfaces = []
@@ -74,11 +75,17 @@ def create_satellite_surfaces(config: SatelliteConfiguration, constants: dict) -
                 name=name,
                 normal=normal,
                 area=area * 1e-6,  # mm^2 to m^2
-                panel=PanelProperties(material=panel_material, thickness=panel_thickness),
-                optical_properties=SurfaceOpticalProperties(outside=outside_materials, inside=inside_materials),
+                panel=PanelProperties(
+                    material=panel_material,
+                    thickness=panel_thickness,
+                ),
+                optical_properties=SurfaceOpticalProperties(
+                    outside=outside_materials,
+                    inside=inside_materials,
+                ),
                 # 設定ファイルにinitial_temperatureがない場合は293.15K（20℃）をデフォルト値として使用
                 initial_temp=constants.get("initital_temperature", 293.15),
-            )
+            ),
         )
 
     return surfaces
@@ -89,10 +96,9 @@ def run_earth_orbit_analysis(
     altitude: float,
     beta_angle: float,
     constants: dict,
-    duration: float = None,
-) -> Tuple[List[float], Dict[str, List[float]], List[HeatInputRecord], List[bool]]:
-    """
-    地球周回軌道での熱解析を実行
+    duration: float | None = None,
+) -> tuple[list[float], dict[str, list[float]], list[HeatInputRecord], list[bool]]:
+    """地球周回軌道での熱解析を実行
 
     Args:
         config: 衛星の設定
@@ -105,10 +111,11 @@ def run_earth_orbit_analysis(
         temperatures: 各面の温度履歴（キー：面の名前）
         heat_input_records: 熱入力記録
         eclipse_flags: 各時刻で蝕中かどうかのリスト
+
     """
     debug = constants.get("debug", False)
     # 軌道パラメータの計算
-    period, eclipse_fraction, beta_rad, orbit_normal, e1, e2 = calculate_orbit_parameters(altitude, beta_angle)
+    period, _eclipse_fraction, beta_rad, orbit_normal, e1, e2 = calculate_orbit_parameters(altitude, beta_angle)
     if duration is None:
         duration = period
 
@@ -143,6 +150,7 @@ def run_earth_orbit_analysis(
     # MLIノードの温度も記録
     for surface_name, surface in node.surfaces.items():
         if surface.has_mli:
+            assert surface.mli_node is not None
             temperatures[f"{surface_name}_MLI"] = [surface.mli_node.temperature]
     # コンポーネントの温度も記録
     for component_name in node.components.keys():
@@ -155,17 +163,28 @@ def run_earth_orbit_analysis(
     for t in times[1:]:
         # 衛星の位置・速度ベクトルと蝕の状態を計算
         position, velocity, in_eclipse = calculate_satellite_position(
-            time=t, period=period, altitude=altitude, orbit_normal=orbit_normal, e1=e1, e2=e2
+            time=t,
+            period=period,
+            altitude=altitude,
+            orbit_normal=orbit_normal,
+            e1=e1,
+            e2=e2,
         )
 
         # 姿勢行列を計算
         rotation_matrix = calculate_satellite_attitude(
-            position=position, velocity=velocity, attitude_config=attitude_mode, debug=constants.get("debug", False)
+            position=position,
+            velocity=velocity,
+            attitude_config=attitude_mode,
+            debug=constants.get("debug", False),
         )
 
         # 太陽方向ベクトル（衛星固定系）
         sun_vector = calculate_sun_vector_in_satellite_frame(
-            time=t, period=period, beta_angle=beta_rad, rotation_matrix=rotation_matrix
+            time=t,
+            period=period,
+            beta_angle=beta_rad,
+            rotation_matrix=rotation_matrix,
         )
 
         # 地球方向ベクトルとビューファクターを計算
@@ -187,10 +206,14 @@ def run_earth_orbit_analysis(
             temperatures[surface_name].append(node.get_temperature(surface_name))
             # MLIノードの温度も記録
             if node.surfaces[surface_name].has_mli:
-                temperatures[f"{surface_name}_MLI"].append(node.surfaces[surface_name].mli_node.temperature)
+                _mli_node = node.surfaces[surface_name].mli_node
+                assert _mli_node is not None
+                temperatures[f"{surface_name}_MLI"].append(_mli_node.temperature)
         # コンポーネントの温度も記録
         for component_name in node.components.keys():
-            temperatures[component_name].append(node.get_component_temperature(component_name))
+            temperatures[component_name].append(
+                node.get_component_temperature(component_name),
+            )
         # 蝕フラグの記録
         eclipse_flags.append(bool(in_eclipse))
 
@@ -201,10 +224,9 @@ def run_deep_space_analysis(
     config: SatelliteConfiguration,
     sun_vector: np.ndarray,
     constants: dict,
-    duration: float = None,
-) -> Tuple[List[float], Dict[str, List[float]], List[HeatInputRecord], List[bool]]:
-    """
-    深宇宙探査機の非定常熱解析を実行
+    duration: float | None = None,
+) -> tuple[list[float], dict[str, list[float]], list[HeatInputRecord], list[bool]]:
+    """深宇宙探査機の非定常熱解析を実行
 
     Args:
         config: 衛星の設定
@@ -216,6 +238,7 @@ def run_deep_space_analysis(
         temperatures: 各面の温度履歴（キー：面の名前）
         heat_input_records: 熱入力記録
         eclipse_flags: 各時刻で蝕中かどうかのリスト（深宇宙では常にFalse）
+
     """
     debug = constants.get("debug", False)
     # 時間ステップの設定
@@ -239,6 +262,7 @@ def run_deep_space_analysis(
         node.add_component(component)
 
     # コンダクタンス行列の設定
+    assert config.conductance_matrix is not None
     node.set_conductance_matrix(config.conductance_matrix, config.enable_conductance)
 
     # 温度履歴の記録
@@ -246,6 +270,7 @@ def run_deep_space_analysis(
     # MLIノードの温度も記録
     for surface_name, surface in node.surfaces.items():
         if surface.has_mli:
+            assert surface.mli_node is not None
             temperatures[f"{surface_name}_MLI"] = [surface.mli_node.temperature]
     # コンポーネントの温度も記録
     for component_name in node.components.keys():
@@ -256,27 +281,35 @@ def run_deep_space_analysis(
 
     # 時間積分
     for t in times[1:]:
-        heat_balances = node.calculate_heat_balance(sun_vector=sun_vector, time=t, constants=constants)
+        heat_balances = node.calculate_heat_balance(
+            sun_vector=sun_vector,
+            time=t,
+            constants=constants,
+        )
         node.update_temperature(heat_balances, time_step)
         for surface_name in node.surfaces.keys():
             temperatures[surface_name].append(node.get_temperature(surface_name))
             # MLIノードの温度も記録
             if node.surfaces[surface_name].has_mli:
-                temperatures[f"{surface_name}_MLI"].append(node.surfaces[surface_name].mli_node.temperature)
+                _mli_node = node.surfaces[surface_name].mli_node
+                assert _mli_node is not None
+                temperatures[f"{surface_name}_MLI"].append(_mli_node.temperature)
         # コンポーネントの温度も記録
         for component_name in node.components.keys():
-            temperatures[component_name].append(node.get_component_temperature(component_name))
+            temperatures[component_name].append(
+                node.get_component_temperature(component_name),
+            )
         eclipse_flags.append(False)
 
     return times.tolist(), temperatures, node.heat_input_records, eclipse_flags
 
 
 def copy_settings_files(output_dir: str):
-    """
-    設定ファイルを結果出力フォルダにコピーする関数
+    """設定ファイルを結果出力フォルダにコピーする関数
 
     Args:
         output_dir (str): 出力ディレクトリのパス
+
     """
     settings_dir = "settings"
     settings_output_dir = os.path.join(output_dir, "settings")
@@ -304,17 +337,49 @@ def main():
     )
     parser.add_argument("--altitude", type=float, help="軌道高度 [km]")
     parser.add_argument("--beta", type=float, help="ベータ角 [度]")
-    parser.add_argument("--settings_dir", type=str, default="settings", help="設定ディレクトリ")
-    parser.add_argument("--output_dir", type=str, default="output", help="出力ディレクトリ")
-    parser.add_argument("--sun_x", type=float, help="太陽方向ベクトルX成分（深宇宙モード用）")
-    parser.add_argument("--sun_y", type=float, help="太陽方向ベクトルY成分（深宇宙モード用）")
-    parser.add_argument("--sun_z", type=float, help="太陽方向ベクトルZ成分（深宇宙モード用）")
-    parser.add_argument("--num_orbits", type=int, default=1, help="解析する周回数（デフォルト: 1）")
     parser.add_argument(
-        "--duration", type=float, help="解析時間 [秒]（指定しない場合は地球周回は1軌道×num_orbits、深宇宙は6000秒）"
+        "--settings_dir",
+        type=str,
+        default="settings",
+        help="設定ディレクトリ",
     )
     parser.add_argument(
-        "--temp-grid-interval", type=float, default=10.0, help="温度プロファイルの等温線の間隔 [°C] (デフォルト: 10.0)"
+        "--output_dir",
+        type=str,
+        default="output",
+        help="出力ディレクトリ",
+    )
+    parser.add_argument(
+        "--sun_x",
+        type=float,
+        help="太陽方向ベクトルX成分（深宇宙モード用）",
+    )
+    parser.add_argument(
+        "--sun_y",
+        type=float,
+        help="太陽方向ベクトルY成分（深宇宙モード用）",
+    )
+    parser.add_argument(
+        "--sun_z",
+        type=float,
+        help="太陽方向ベクトルZ成分（深宇宙モード用）",
+    )
+    parser.add_argument(
+        "--num_orbits",
+        type=int,
+        default=1,
+        help="解析する周回数（デフォルト: 1）",
+    )
+    parser.add_argument(
+        "--duration",
+        type=float,
+        help="解析時間 [秒]（指定しない場合は地球周回は1軌道×num_orbits、深宇宙は6000秒）",
+    )
+    parser.add_argument(
+        "--temp-grid-interval",
+        type=float,
+        default=10.0,
+        help="温度プロファイルの等温線の間隔 [°C] (デフォルト: 10.0)",
     )
     args = parser.parse_args()
 
@@ -343,6 +408,13 @@ def main():
         output_subdir = f"earth_orbit_alt{altitude:.1f}_beta{beta_angle:.1f}"
         output_path = os.path.join(args.output_dir, output_subdir)
         os.makedirs(output_path, exist_ok=True)
+
+        # Create a .gitignore file inside the output directory to ignore all files
+        gitignore_path = os.path.join(args.output_dir, ".gitignore")
+        if not os.path.exists(gitignore_path):
+            with open(gitignore_path, "w") as gitignore_file:
+                gitignore_file.write("*\n")
+
         # 設定ファイルのコピー
         copy_settings_files(output_path)
 
@@ -368,7 +440,11 @@ def main():
 
         # 結果のプロットと保存
         plot_temperature_profile(
-            times, temperatures, output_path, eclipse_flags, temp_grid_interval=args.temp_grid_interval
+            times,
+            temperatures,
+            output_path,
+            eclipse_flags,
+            temp_grid_interval=args.temp_grid_interval,
         )
         save_temperature_data(times, temperatures, output_path)
         plot_heat_balance(heat_input_records, output_path)
@@ -376,12 +452,19 @@ def main():
         save_heat_input_data(heat_input_records, output_path)
 
         # 軌道の可視化
-        plot_orbit_visualization(altitude, beta_angle, output_path, debug=constants.get("debug", False))
+        plot_orbit_visualization(
+            altitude,
+            beta_angle,
+            output_path,
+            debug=constants.get("debug", False),
+        )
 
     else:  # deep_space
         # 深宇宙解析
         if not all(v is not None for v in [args.sun_x, args.sun_y, args.sun_z]):
-            parser.error("深宇宙モードでは --sun_x, --sun_y, --sun_z の全てを指定してください")
+            parser.error(
+                "深宇宙モードでは --sun_x, --sun_y, --sun_z の全てを指定してください",
+            )
 
         # 太陽方向ベクトルを正規化
         sun_vector = np.array([args.sun_x, args.sun_y, args.sun_z])
@@ -417,7 +500,11 @@ def main():
         node_for_vf.save_rij_matrix(output_path, debug=debug)
         # 結果のプロットと保存（地球周回と同じ関数を使う）
         plot_temperature_profile(
-            times, temperatures, output_path, eclipse_flags, temp_grid_interval=args.temp_grid_interval
+            times,
+            temperatures,
+            output_path,
+            eclipse_flags,
+            temp_grid_interval=args.temp_grid_interval,
         )
         save_temperature_data(times, temperatures, output_path)
         plot_heat_balance(heat_input_records, output_path)

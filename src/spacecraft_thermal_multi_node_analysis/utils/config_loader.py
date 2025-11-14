@@ -1,5 +1,4 @@
 import os.path
-from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -10,15 +9,14 @@ from .dataclasses import ComponentProperties, MaterialProperties, SurfaceMateria
 
 def load_constants(settings_dir: str) -> dict:
     """定数ファイルを読み込む"""
-    with open(os.path.join(settings_dir, "constants.yaml"), "r", encoding="utf-8") as f:
+    with open(os.path.join(settings_dir, "constants.yaml"), encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
-def load_surface_properties(settings_dir: str) -> Tuple[Dict[str, SurfaceMaterial], Dict[str, List[Dict[str, float]]]]:
+def load_surface_properties(settings_dir: str) -> tuple[dict[str, SurfaceMaterial], dict[str, list[dict[str, float]]]]:
     """表面光学特性を読み込む"""
     with open(
         os.path.join(settings_dir, "surface_properties.yaml"),
-        "r",
         encoding="utf-8",
     ) as f:
         data = yaml.safe_load(f)
@@ -46,11 +44,10 @@ def load_surface_properties(settings_dir: str) -> Tuple[Dict[str, SurfaceMateria
     return surface_materials, data["surface_optical_assignments"]
 
 
-def load_material_properties(settings_dir: str) -> Dict[str, MaterialProperties]:
+def load_material_properties(settings_dir: str) -> dict[str, MaterialProperties]:
     """材料物性を読み込む"""
     with open(
         os.path.join(settings_dir, "material_properties.yaml"),
-        "r",
         encoding="utf-8",
     ) as f:
         data = yaml.safe_load(f)
@@ -69,11 +66,10 @@ def load_material_properties(settings_dir: str) -> Dict[str, MaterialProperties]
     return material_properties
 
 
-def load_panel_material_assignments(settings_dir: str) -> Dict[str, List[Dict[str, float]]]:
+def load_panel_material_assignments(settings_dir: str) -> dict[str, list[dict[str, float]]]:
     """パネルの材料構成を読み込む"""
     with open(
         os.path.join(settings_dir, "material_properties.yaml"),
-        "r",
         encoding="utf-8",
     ) as f:
         data = yaml.safe_load(f)
@@ -82,11 +78,11 @@ def load_panel_material_assignments(settings_dir: str) -> Dict[str, List[Dict[st
 
 
 def load_conductance_matrix(settings_dir: str) -> pd.DataFrame:
-    """
-    パネル間の熱伝導率を定義するコンダクタンス行列を読み込む
+    """パネル間の熱伝導率を定義するコンダクタンス行列を読み込む
 
     Returns:
         pd.DataFrame: コンダクタンス行列（ノード間の熱伝導率 [W/K]）
+
     """
     file_path = os.path.join(settings_dir, "cij_matrix.csv")
     if not os.path.exists(file_path):
@@ -110,11 +106,10 @@ def load_conductance_matrix(settings_dir: str) -> pd.DataFrame:
     return df
 
 
-def load_component_properties(settings_dir: str) -> Dict[str, ComponentProperties]:
+def load_component_properties(settings_dir: str) -> dict[str, ComponentProperties]:
     """コンポーネントの熱物性値を読み込む"""
     with open(
         os.path.join(settings_dir, "component_properties.yaml"),
-        "r",
         encoding="utf-8",
     ) as f:
         data = yaml.safe_load(f)
