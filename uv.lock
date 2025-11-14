@@ -725,6 +725,13 @@ dev = [
     { name = "ruff" },
     { name = "types-pyyaml" },
 ]
+ruff = [
+    { name = "ruff" },
+]
+test = [
+    { name = "pytest" },
+    { name = "pytest-datadir" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -743,6 +750,11 @@ dev = [
     { name = "pytest-datadir", specifier = ">=1.8.0" },
     { name = "ruff", specifier = ">=0.14.3" },
     { name = "types-pyyaml", specifier = ">=6.0.12.20250915" },
+]
+ruff = [{ name = "ruff", specifier = ">=0.14.3" }]
+test = [
+    { name = "pytest", specifier = ">=8.4.2" },
+    { name = "pytest-datadir", specifier = ">=1.8.0" },
 ]
 
 [[package]]
