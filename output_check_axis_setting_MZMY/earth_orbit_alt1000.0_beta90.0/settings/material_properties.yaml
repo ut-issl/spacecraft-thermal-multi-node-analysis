@@ -1,0 +1,41 @@
+# 材料の熱物性値定義
+# 密度: kg/m^3
+# 比熱: J/kg/K
+# 熱伝導率: W/m/K
+
+material_properties:
+  Aluminum:
+    name: "Aluminum Alloy"
+    density: 2700.0
+    specific_heat: 900.0
+    thermal_conductivity: 237.0
+    description: "アルミニウム合金"
+
+# パネルの材料構成定義
+# 各面の材料とその割合（面積比）および厚みを定義
+# 割合の合計が1.0になるように設定
+panel_material_assignments:
+  PX:  # +X
+    - material: "Aluminum"
+      ratio: 1.0
+      thickness: 2.0  # mm
+  MX:  # -X
+    - material: "Aluminum"
+      ratio: 1.0
+      thickness: 2.0  # mm
+  PY:  # +Y
+    - material: "Aluminum"
+      ratio: 1.0
+      thickness: 2.0  # mm
+  MY:  # -Y
+    - material: "Aluminum"
+      ratio: 1.0
+      thickness: 2.0  # mm
+  PZ:  # +Z
+    - material: "Aluminum"
+      ratio: 1.0
+      thickness: 2.0  # mm
+  MZ:  # -Z
+    - material: "Aluminum"
+      ratio: 1.0
+      thickness: 2.0  # mm 
