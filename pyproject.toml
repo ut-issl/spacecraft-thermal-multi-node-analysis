@@ -20,10 +20,14 @@ multi-node-analysis = "spacecraft_thermal_multi_node_analysis.multi_node_analysi
 dev = [
   "mypy>=1.18.2",
   "pandas-stubs>=2.3.2.250926",
+  "types-pyyaml>=6.0.12.20250915",
+  { include-group = "ruff" },
+  { include-group = "test" },
+]
+ruff = ["ruff>=0.14.3"]
+test = [
   "pytest>=8.4.2",
   "pytest-datadir>=1.8.0",
-  "ruff>=0.14.3",
-  "types-pyyaml>=6.0.12.20250915",
 ]
 
 [build-system]
@@ -92,5 +96,5 @@ unfixable = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# "tests/*" = ["ANN201"]
+"tests/*" = ["INP001"]
 # "scripts/*" = ["INP001"]

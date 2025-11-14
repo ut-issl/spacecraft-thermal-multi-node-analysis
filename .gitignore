@@ -92,7 +92,7 @@ log/
 *.tar.gz
 
 # rye
-*.lock
+#*.lock
 
 # comparison
 comparison/
