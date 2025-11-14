@@ -92,5 +92,5 @@ unfixable = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# "tests/*" = ["ANN201"]
+"tests/*" = ["INP001"]
 # "scripts/*" = ["INP001"]

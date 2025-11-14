@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
-from rich import print
+from rich import print  # noqa: A004
 
 import spacecraft_thermal_multi_node_analysis as stmna
 from spacecraft_thermal_multi_node_analysis.utils.config_loader import load_constants
@@ -50,7 +50,7 @@ def test_run_earth_orbit_analysis(
     )
     from spacecraft_thermal_multi_node_analysis.utils.thermal_utils import ThermalNode
 
-    times, temperatures, heat_input_records, eclipse_flags = stmna.run_earth_orbit_analysis(
+    times, temperatures, heat_input_records, _eclipse_flags = stmna.run_earth_orbit_analysis(
         config=ref_satellite_config,
         altitude=600.0,
         beta_angle=0.0,
