@@ -1,9 +1,13 @@
 import argparse
+import logging
 import os
 import subprocess
 from datetime import datetime
 
 import pandas as pd
+from rich.logging import RichHandler
+
+logger = logging.getLogger(__name__)
 
 
 def create_analysis_config_template(output_file: str = "analysis_config_template.csv"):
@@ -28,7 +32,7 @@ def create_analysis_config_template(output_file: str = "analysis_config_template
         },
     )
     template_df.to_csv(output_file, index=False)
-    print(f"解析設定テンプレートを作成しました: {output_file}")
+    logger.info(f"解析設定テンプレートを作成しました: {output_file}")
 
 
 def load_analysis_config(config_file: str) -> list[dict]:
@@ -126,12 +130,12 @@ def execute_analysis(config: dict, log_file: str) -> bool:
         # 解析の実行
         _result = subprocess.run(cmd, check=True, capture_output=True, text=True)
         write_analysis_log(log_file, config, "success")
-        print(f"解析が成功しました: {config['output_dir']}")
+        logger.info(f"解析が成功しました: {config['output_dir']}")
         return True
     except subprocess.CalledProcessError as e:
         error_msg = f"コマンド実行エラー: {e.stderr}"
         write_analysis_log(log_file, config, "error", error_msg)
-        print(f"エラー: {config['output_dir']} の解析中にエラーが発生しました: {error_msg}")
+        logger.info(f"エラー: {config['output_dir']} の解析中にエラーが発生しました: {error_msg}")
         return False
 
 
@@ -153,11 +157,17 @@ def batch_analysis(config_file: str, log_file: str = "analysis_log.log"):
             success_count += 1
 
     # 実行結果のサマリー
-    print(f"\n解析実行完了: {success_count}/{len(configs)} 成功")
+    logger.info(f"解析実行完了: {success_count}/{len(configs)} 成功")
 
 
 def main():
     parser = argparse.ArgumentParser(description="複数の解析条件を一括実行します。")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="詳細なログを表示します。",
+    )
     subparsers = parser.add_subparsers(dest="command", help="実行するコマンド")
 
     # 解析設定のテンプレートを作成するコマンド
@@ -178,6 +188,13 @@ def main():
     )
 
     args = parser.parse_args()
+
+    log_level = logging.DEBUG if args.verbose else logging.INFO
+    pkg_handler = RichHandler(level=log_level)
+    pkg_logger = logging.getLogger("spacecraft_thermal_multi_node_analysis")
+    pkg_logger.setLevel(log_level)
+    pkg_logger.addHandler(pkg_handler)
+    pkg_logger.propagate = False
 
     if args.command == "create-template":
         create_analysis_config_template(args.output_file)

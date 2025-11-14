@@ -42,7 +42,7 @@ select = ["ALL"]
 ignore = [
   # TODO: The following rules should be selected in the future.
   "ANN",
-  "T",
+  # "T",
   "TRY",
   "EM",
   "RET",
