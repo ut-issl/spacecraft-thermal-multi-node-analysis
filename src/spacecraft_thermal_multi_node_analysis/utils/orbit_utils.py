@@ -1,4 +1,8 @@
+import logging
+
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 def calculate_orbit_parameters(
@@ -212,11 +216,11 @@ def calculate_satellite_attitude(
 
     # デバッグ
     if debug:
-        print(f"[DEBUG_ATT] PX: {px}, PY: {py}, PZ: {pz}")
-        print(
+        logger.debug(f"[DEBUG_ATT] PX: {px}, PY: {py}, PZ: {pz}")
+        logger.debug(
             f"[DEBUG_ATT] 直交性: PX・PY={np.dot(px, py):.3e}, PY・PZ={np.dot(py, pz):.3e}, PZ・PX={np.dot(pz, px):.3e}",
         )
-        print(f"[DEBUG_ATT] det(R): {np.linalg.det(rotation_matrix):.6f}")
+        logger.debug(f"[DEBUG_ATT] det(R): {np.linalg.det(rotation_matrix):.6f}")
 
     return rotation_matrix
 

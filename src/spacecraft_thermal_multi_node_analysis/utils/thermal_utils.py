@@ -1,3 +1,4 @@
+import logging
 import os
 from dataclasses import dataclass
 
@@ -15,6 +16,8 @@ from .dataclasses import (
     SurfaceMaterial,
 )
 from .orbit_utils import calculate_albedo_view_factor, calculate_earth_ir_view_factor
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -335,12 +338,12 @@ class ViewFactorMatrix:
         # デバッグ出力
         # debug_flag = load_constants().get("debug", False)
         if debug:
-            print(
+            logger.debug(
                 f"Parallel View Factor Calculation for {surface_i.name}->{surface_j.name}:",
             )
-            print(f"  Dimensions: a={a:.3e}m, b={b:.3e}m, d={d:.3e}m")
-            print(f"  Normal vectors: ni={surface_i.normal}, nj={surface_j.normal}")
-            print(f"  Non-dimensional parameters: X={X:.3f}, Y={Y:.3f}")
+            logger.debug(f"  Dimensions: a={a:.3e}m, b={b:.3e}m, d={d:.3e}m")
+            logger.debug(f"  Normal vectors: ni={surface_i.normal}, nj={surface_j.normal}")
+            logger.debug(f"  Non-dimensional parameters: X={X:.3f}, Y={Y:.3f}")
 
         # 解析解によるビューファクター計算
         # F12 = (2/(πXY)) * (ln(sqrt((1+X^2)(1+Y^2)/(1+X^2+Y^2)) + X*sqrt(1+Y^2)arctan(X/sqrt(1+Y^2)) + Y*sqrt(1+X^2)arctan(Y/sqrt(1+X^2)) - X*arctan(X) - Y*arctan(Y))
@@ -354,10 +357,10 @@ class ViewFactorMatrix:
 
         # デバッグ出力（計算過程）
         if debug:
-            print(
+            logger.debug(
                 f"  Terms: term1={term1:.3f}, term2={term2:.3f}, term3={term3:.3f}, term4={term4:.3f}, term5={term5:.3f}",
             )
-            print(f"  Final view factor: F12={F12:.3f}")
+            logger.debug(f"  Final view factor: F12={F12:.3f}")
 
         return F12
 

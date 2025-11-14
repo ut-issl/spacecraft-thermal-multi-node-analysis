@@ -1,9 +1,12 @@
 import argparse
+import logging
 import os
 import subprocess
 from datetime import datetime
 
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 
 def create_analysis_config_template(output_file: str = "analysis_config_template.csv"):
@@ -28,7 +31,7 @@ def create_analysis_config_template(output_file: str = "analysis_config_template
         },
     )
     template_df.to_csv(output_file, index=False)
-    print(f"解析設定テンプレートを作成しました: {output_file}")
+    logger.info(f"解析設定テンプレートを作成しました: {output_file}")
 
 
 def load_analysis_config(config_file: str) -> list[dict]:
@@ -126,12 +129,12 @@ def execute_analysis(config: dict, log_file: str) -> bool:
         # 解析の実行
         _result = subprocess.run(cmd, check=True, capture_output=True, text=True)
         write_analysis_log(log_file, config, "success")
-        print(f"解析が成功しました: {config['output_dir']}")
+        logger.info(f"解析が成功しました: {config['output_dir']}")
         return True
     except subprocess.CalledProcessError as e:
         error_msg = f"コマンド実行エラー: {e.stderr}"
         write_analysis_log(log_file, config, "error", error_msg)
-        print(f"エラー: {config['output_dir']} の解析中にエラーが発生しました: {error_msg}")
+        logger.info(f"エラー: {config['output_dir']} の解析中にエラーが発生しました: {error_msg}")
         return False
 
 
@@ -153,7 +156,7 @@ def batch_analysis(config_file: str, log_file: str = "analysis_log.log"):
             success_count += 1
 
     # 実行結果のサマリー
-    print(f"\n解析実行完了: {success_count}/{len(configs)} 成功")
+    logger.info(f"\n解析実行完了: {success_count}/{len(configs)} 成功")
 
 
 def main():

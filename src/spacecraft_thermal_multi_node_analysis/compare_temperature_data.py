@@ -1,10 +1,13 @@
 import argparse
+import logging
 import os
 from datetime import datetime
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 
 def calculate_rmse(diff_df: pd.DataFrame) -> dict[str, float]:
@@ -100,13 +103,13 @@ def compare_temperature_data(td_file: str, output_file: str, output_dir: str = "
 
     # 差分データの保存
     diff_df.to_csv(output_path, index=False)
-    print(f"差分データを保存しました: {output_path}")
+    logger.info(f"差分データを保存しました: {output_path}")
 
     # RMSEの計算とログ記録
     rmse_dict = calculate_rmse(diff_df)
     log_file = os.path.join(output_dir, "comparison_rmse.log")
     write_rmse_log(log_file, td_file, output_file, rmse_dict)
-    print(f"RMSEの結果をログに記録しました: {log_file}")
+    logger.info(f"RMSEの結果をログに記録しました: {log_file}")
 
     return output_path
 
@@ -153,8 +156,10 @@ def batch_compare(config_file: str, output_dir: str = "comparison") -> list[str]
         try:
             output_path = compare_temperature_data(config["td_file"], config["output_file"], output_dir)
             output_paths.append(output_path)
-        except Exception as e:  # noqa: BLE001
-            print(f"エラー: {config['td_file']} と {config['output_file']} の比較中にエラーが発生しました: {e!s}")
+        except Exception as e:
+            logger.exception(
+                f"エラー: {config['td_file']} と {config['output_file']} の比較中にエラーが発生しました: {e!s}",
+            )
 
     return output_paths
 
@@ -170,7 +175,7 @@ def create_config_template(output_file: str = "comparison_config_template.csv"):
         {"td_file": ["comparison/test/example.csv"], "output_file": ["output/example/temperature_data.csv"]},
     )
     template_df.to_csv(output_file, index=False)
-    print(f"設定テンプレートを作成しました: {output_file}")
+    logger.info(f"設定テンプレートを作成しました: {output_file}")
 
 
 def main():

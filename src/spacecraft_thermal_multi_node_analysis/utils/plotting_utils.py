@@ -1,3 +1,4 @@
+import logging
 import os
 
 import matplotlib.pyplot as plt
@@ -6,6 +7,8 @@ import pandas as pd
 
 from .orbit_utils import calculate_orbit_parameters
 from .thermal_utils import HeatInputRecord
+
+logger = logging.getLogger(__name__)
 
 # フォントの設定
 plt.rcParams["font.family"] = "Arial"
@@ -355,11 +358,11 @@ def plot_orbit_visualization(
     orbit_radius = earth_radius + altitude
 
     if debug:
-        print("\n=== Detailed Debug Information ===")
-        print("\n[1] Input Parameters")
-        print(f"Beta angle: {beta_angle} degrees")
-        print(f"Orbit radius: {orbit_radius} km")
-        print(f"Earth radius: {earth_radius} km")
+        logger.debug("\n=== Detailed Debug Information ===")
+        logger.debug("\n[1] Input Parameters")
+        logger.debug(f"Beta angle: {beta_angle} degrees")
+        logger.debug(f"Orbit radius: {orbit_radius} km")
+        logger.debug(f"Earth radius: {earth_radius} km")
 
     # 3D plot setup
     fig = plt.figure(figsize=(12, 8))
@@ -387,19 +390,19 @@ def plot_orbit_visualization(
     eclipse_mask = (r_dot_s < 0) & (d_perp < earth_radius)
 
     if debug:
-        print("\n[2] Orbit Analysis")
-        print(f"Orbit normal: {orbit_normal}")
-        print(f"Basis vector e1: {e1}")
-        print(f"Basis vector e2: {e2}")
-        print(f"Sun direction: {s_hat}")
-        print(
+        logger.debug("\n[2] Orbit Analysis")
+        logger.debug(f"Orbit normal: {orbit_normal}")
+        logger.debug(f"Basis vector e1: {e1}")
+        logger.debug(f"Basis vector e2: {e2}")
+        logger.debug(f"Sun direction: {s_hat}")
+        logger.debug(
             f"Angle between sun and orbit normal: {np.degrees(np.arccos(np.clip(np.dot(orbit_normal, s_hat), -1.0, 1.0))):.2f} degrees",
         )
 
-        print("\n[3] Eclipse Statistics")
-        print(f"Total points: {len(eclipse_mask)}")
-        print(f"Eclipse points: {np.sum(eclipse_mask)}")
-        print(f"Eclipse fraction: {np.sum(eclipse_mask) / len(eclipse_mask):.2%}")
+        logger.debug("\n[3] Eclipse Statistics")
+        logger.debug(f"Total points: {len(eclipse_mask)}")
+        logger.debug(f"Eclipse points: {np.sum(eclipse_mask)}")
+        logger.debug(f"Eclipse fraction: {np.sum(eclipse_mask) / len(eclipse_mask):.2%}")
 
     # Plot orbit
     ax.plot(r_vecs[:, 0], r_vecs[:, 1], r_vecs[:, 2], "r-", label="Orbit", linewidth=2)

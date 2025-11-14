@@ -1,4 +1,5 @@
 import argparse
+import logging
 import os
 import shutil
 
@@ -27,6 +28,8 @@ from .utils.thermal_utils import (
     ThermalNode,
     load_constants,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def create_satellite_surfaces(
@@ -323,7 +326,7 @@ def copy_settings_files(output_dir: str):
             src_path = os.path.join(settings_dir, file)
             dst_path = os.path.join(settings_output_dir, file)
             shutil.copy2(src_path, dst_path)
-            print(f"設定ファイルをコピーしました: {dst_path}")
+            logger.info(f"設定ファイルをコピーしました: {dst_path}")
 
 
 def main():
