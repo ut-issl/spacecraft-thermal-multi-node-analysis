@@ -2,7 +2,19 @@
 name = "spacecraft-thermal-multi-node-analysis"
 version = "0.1.0"
 description = "衛星の多節点熱解析プログラム"
+readme = "README.md"
 requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Typing :: Typed",
+]
 dependencies = [
   "matplotlib>=3.4.0",
   "numpy>=1.21.0",
@@ -10,6 +22,10 @@ dependencies = [
   "pyyaml>=5.4.0",
   "rich>=14.2.0",
 ]
+
+[project.urls]
+Issues = "https://github.com/ut-issl/spacecraft-thermal-multi-node-analysis/issues"
+Repository = "https://github.com/ut-issl/spacecraft-thermal-multi-node-analysis"
 
 [project.scripts]
 batch-analysis = "spacecraft_thermal_multi_node_analysis.batch_analysis:main"
