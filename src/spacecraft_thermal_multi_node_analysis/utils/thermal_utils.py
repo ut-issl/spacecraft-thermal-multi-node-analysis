@@ -174,20 +174,16 @@ class ViewFactorMatrix:
         self,
         surfaces: dict[str, Surface],
         dimensions: dict[str, float],
-        *,
-        debug: bool = False,
     ):
         self.surface_names = list(surfaces.keys())
         self.dimensions = dimensions
         n = len(self.surface_names)
         self.matrix = np.zeros((n, n))
-        self._calculate_view_factors(surfaces, debug=debug)
+        self._calculate_view_factors(surfaces)
 
     def _calculate_view_factors(
         self,
         surfaces: dict[str, Surface],
-        *,
-        debug: bool = False,
     ):
         """各面間のビューファクターを計算"""
         for i, name_i in enumerate(self.surface_names):
@@ -201,15 +197,12 @@ class ViewFactorMatrix:
                 self.matrix[i, j] = self._calculate_view_factor(
                     surface_i,
                     surface_j,
-                    debug=debug,
                 )
 
     def _calculate_view_factor(
         self,
         surface_i: Surface,
         surface_j: Surface,
-        *,
-        debug: bool = False,
     ) -> float:
         """2つの面間のビューファクターを解析解で計算
 
@@ -232,7 +225,6 @@ class ViewFactorMatrix:
             return self._calculate_parallel_view_factor(
                 surface_i,
                 surface_j,
-                debug=debug,
             )
         if abs(dot_product) == 0.0:  # 隣接面（垂直）
             return self._calculate_perpendicular_view_factor(surface_i, surface_j)
@@ -294,8 +286,6 @@ class ViewFactorMatrix:
         self,
         surface_i: Surface,
         surface_j: Surface,
-        *,
-        debug: bool = False,
     ) -> float:
         """平行な長方形面間のビューファクターを計算
 
@@ -336,14 +326,12 @@ class ViewFactorMatrix:
         Y = b / d
 
         # デバッグ出力
-        # debug_flag = load_constants().get("debug", False)
-        if debug:
-            logger.debug(
-                f"Parallel View Factor Calculation for {surface_i.name}->{surface_j.name}:",
-            )
-            logger.debug(f"  Dimensions: a={a:.3e}m, b={b:.3e}m, d={d:.3e}m")
-            logger.debug(f"  Normal vectors: ni={surface_i.normal}, nj={surface_j.normal}")
-            logger.debug(f"  Non-dimensional parameters: X={X:.3f}, Y={Y:.3f}")
+        logger.debug(
+            f"Parallel View Factor Calculation for {surface_i.name}->{surface_j.name}:",
+        )
+        logger.debug(f"  Dimensions: a={a:.3e}m, b={b:.3e}m, d={d:.3e}m")
+        logger.debug(f"  Normal vectors: ni={surface_i.normal}, nj={surface_j.normal}")
+        logger.debug(f"  Non-dimensional parameters: X={X:.3f}, Y={Y:.3f}")
 
         # 解析解によるビューファクター計算
         # F12 = (2/(πXY)) * (ln(sqrt((1+X^2)(1+Y^2)/(1+X^2+Y^2)) + X*sqrt(1+Y^2)arctan(X/sqrt(1+Y^2)) + Y*sqrt(1+X^2)arctan(Y/sqrt(1+X^2)) - X*arctan(X) - Y*arctan(Y))
@@ -356,11 +344,10 @@ class ViewFactorMatrix:
         F12 = (2 / (np.pi * X * Y)) * (term1 + term2 + term3 - term4 - term5)
 
         # デバッグ出力（計算過程）
-        if debug:
-            logger.debug(
-                f"  Terms: term1={term1:.3f}, term2={term2:.3f}, term3={term3:.3f}, term4={term4:.3f}, term5={term5:.3f}",
-            )
-            logger.debug(f"  Final view factor: F12={F12:.3f}")
+        logger.debug(
+            f"  Terms: term1={term1:.3f}, term2={term2:.3f}, term3={term3:.3f}, term4={term4:.3f}, term5={term5:.3f}",
+        )
+        logger.debug(f"  Final view factor: F12={F12:.3f}")
 
         return F12
 
@@ -400,7 +387,7 @@ class ThermalNode:
         self.components: dict[str, ComponentProperties] = {}
         self.component_temperatures: dict[str, float] = {}
 
-    def add_surface(self, surface: Surface, *, debug: bool = False):
+    def add_surface(self, surface: Surface):
         """面を追加し、初期温度を設定"""
         self.surfaces[surface.name] = surface
         self.temperatures[surface.name] = self.initial_temp
@@ -413,7 +400,6 @@ class ThermalNode:
         self.view_factor_matrix = ViewFactorMatrix(
             self.surfaces,
             self.dimensions,
-            debug=debug,
         )
         # Rijキャッシュもリセット
         self._rij_cache = None
@@ -438,8 +424,6 @@ class ThermalNode:
     def calculate_interpanel_radiation(
         self,
         stefan_boltzmann: float,
-        *,
-        debug: bool = False,
     ) -> dict[str, float]:
         """Rij（放射伝達行列）を用いた厳密な熱輻射計算（宇宙放射含む）"""
         # Rij, node_namesをキャッシュ
@@ -449,7 +433,6 @@ class ThermalNode:
             self._rij_cache, self._rij_names = calculate_radiative_conductance_matrix(
                 self.surfaces,
                 self.dimensions,
-                debug=debug,
             )
         Rij = self._rij_cache
         _node_names = self._rij_names
@@ -518,7 +501,6 @@ class ThermalNode:
         # パネル間輻射（Rij法、宇宙放射含む）を一度だけ計算
         interpanel_radiation = self.calculate_interpanel_radiation(
             stefan_boltzmann,
-            debug=constants.get("debug", False),
         )
 
         # コンダクタンスによる熱伝導を計算
@@ -738,8 +720,6 @@ class ThermalNode:
         self,
         output_dir: str,
         filename: str = "rij_matrix.csv",
-        *,
-        debug: bool = False,
     ):
         """Rij（放射伝達行列）をCSVで出力
         行・列ともに面名+SPACEラベル付き
@@ -749,7 +729,6 @@ class ThermalNode:
         Rij, node_names = calculate_radiative_conductance_matrix(
             self.surfaces,
             self.dimensions,
-            debug=debug,
         )
         df = pd.DataFrame(Rij, index=node_names, columns=node_names)
         os.makedirs(output_dir, exist_ok=True)
@@ -775,8 +754,6 @@ class ThermalNode:
 def calculate_radiative_conductance_matrix(
     surfaces: dict[str, Surface],
     dimensions: dict[str, float],
-    *,
-    debug: bool = False,
 ) -> tuple[np.ndarray, list[str]]:
     """6面+宇宙ノードの7x7 Rij（放射伝達行列）を作成する。
     面ノード間のRijは「面積 x i面放射率 x Fij」で計算。
@@ -794,7 +771,7 @@ def calculate_radiative_conductance_matrix(
     node_names = [*surface_names, "SPACE"]
     Rij = np.zeros((n + 1, n + 1))
 
-    vfm = ViewFactorMatrix(surfaces, dimensions, debug=debug)
+    vfm = ViewFactorMatrix(surfaces, dimensions)
     F = vfm.matrix  # shape=(n, n)
     A = np.array([surfaces[name].area for name in surface_names])
     epsilon_inside = np.array(

@@ -4,6 +4,7 @@ import os
 import shutil
 
 import numpy as np
+from rich.logging import RichHandler
 
 from .utils.orbit_utils import (
     calculate_orbit_parameters,
@@ -116,7 +117,6 @@ def run_earth_orbit_analysis(
         eclipse_flags: 各時刻で蝕中かどうかのリスト
 
     """
-    debug = constants.get("debug", False)
     # 軌道パラメータの計算
     period, _eclipse_fraction, beta_rad, orbit_normal, e1, e2 = calculate_orbit_parameters(altitude, beta_angle)
     if duration is None:
@@ -138,7 +138,7 @@ def run_earth_orbit_analysis(
     )
     # 面の追加と内部発熱の設定
     for surface in create_satellite_surfaces(config, constants):
-        node.add_surface(surface, debug=debug)
+        node.add_surface(surface)
         node.set_internal_heat(surface.name, config.internal_heat[surface.name])
 
     # コンポーネントの追加
@@ -179,7 +179,6 @@ def run_earth_orbit_analysis(
             position=position,
             velocity=velocity,
             attitude_config=attitude_mode,
-            debug=constants.get("debug", False),
         )
 
         # 太陽方向ベクトル（衛星固定系）
@@ -243,7 +242,6 @@ def run_deep_space_analysis(
         eclipse_flags: 各時刻で蝕中かどうかのリスト（深宇宙では常にFalse）
 
     """
-    debug = constants.get("debug", False)
     # 時間ステップの設定
     time_step = constants["analysis_parameters"]["time_step"]
     if duration is None:
@@ -257,7 +255,7 @@ def run_deep_space_analysis(
     )
     # 面の追加と内部発熱の設定
     for surface in create_satellite_surfaces(config, constants):
-        node.add_surface(surface, debug=debug)
+        node.add_surface(surface)
         node.set_internal_heat(surface.name, config.internal_heat[surface.name])
 
     # コンポーネントの追加
@@ -265,7 +263,6 @@ def run_deep_space_analysis(
         node.add_component(component)
 
     # コンダクタンス行列の設定
-    assert config.conductance_matrix is not None
     node.set_conductance_matrix(config.conductance_matrix, config.enable_conductance)
 
     # 温度履歴の記録
@@ -338,6 +335,7 @@ def main():
         default="earth",
         help="解析モード: earth (地球周回軌道) または deep_space (深宇宙)",
     )
+    parser.add_argument("-v", "--verbose", action="store_true", help="詳細なログを表示")
     parser.add_argument("--altitude", type=float, help="軌道高度 [km]")
     parser.add_argument("--beta", type=float, help="ベータ角 [度]")
     parser.add_argument(
@@ -386,8 +384,15 @@ def main():
     )
     args = parser.parse_args()
 
+    # ロギングの設定
+    log_level = logging.DEBUG if args.verbose else logging.INFO
+    pkg_handler = RichHandler(level=log_level)
+    pkg_logger = logging.getLogger("spacecraft_thermal_multi_node_analysis")
+    pkg_logger.setLevel(log_level)
+    pkg_logger.addHandler(pkg_handler)
+    pkg_logger.propagate = False
+
     constants = load_constants(args.settings_dir)
-    debug = constants.get("debug", False)
 
     # 衛星の設定を読み込み
     config = SatelliteConfiguration.from_config_files(args.settings_dir)
@@ -435,11 +440,11 @@ def main():
             dimensions=constants["satellite_dimensions"],
         )
         for surface in create_satellite_surfaces(config, constants):
-            node_for_vf.add_surface(surface, debug=debug)
+            node_for_vf.add_surface(surface)
         vf_csv_path = os.path.join(output_path, "view_factor_matrix.csv")
         node_for_vf.view_factor_matrix.to_csv(vf_csv_path)
         # RijマトリクスもCSV出力
-        node_for_vf.save_rij_matrix(output_path, debug=debug)
+        node_for_vf.save_rij_matrix(output_path)
 
         # 結果のプロットと保存
         plot_temperature_profile(
@@ -459,7 +464,6 @@ def main():
             altitude,
             beta_angle,
             output_path,
-            debug=constants.get("debug", False),
         )
 
     else:  # deep_space
@@ -496,11 +500,11 @@ def main():
             dimensions=constants["satellite_dimensions"],
         )
         for surface in create_satellite_surfaces(config, constants):
-            node_for_vf.add_surface(surface, debug=debug)
+            node_for_vf.add_surface(surface)
         vf_csv_path = os.path.join(output_path, "view_factor_matrix.csv")
         node_for_vf.view_factor_matrix.to_csv(vf_csv_path)
         # RijマトリクスもCSV出力
-        node_for_vf.save_rij_matrix(output_path, debug=debug)
+        node_for_vf.save_rij_matrix(output_path)
         # 結果のプロットと保存（地球周回と同じ関数を使う）
         plot_temperature_profile(
             times,

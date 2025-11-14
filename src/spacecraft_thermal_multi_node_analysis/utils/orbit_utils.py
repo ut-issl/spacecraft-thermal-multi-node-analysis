@@ -138,8 +138,6 @@ def calculate_satellite_attitude(
     position: np.ndarray,
     velocity: np.ndarray,
     attitude_config: dict | None = None,
-    *,
-    debug: bool = False,
 ) -> np.ndarray:
     """LVLH基準で衛星の姿勢行列を構築
 
@@ -215,12 +213,11 @@ def calculate_satellite_attitude(
     rotation_matrix = np.column_stack([px, py, pz])
 
     # デバッグ
-    if debug:
-        logger.debug(f"[DEBUG_ATT] PX: {px}, PY: {py}, PZ: {pz}")
-        logger.debug(
-            f"[DEBUG_ATT] 直交性: PX・PY={np.dot(px, py):.3e}, PY・PZ={np.dot(py, pz):.3e}, PZ・PX={np.dot(pz, px):.3e}",
-        )
-        logger.debug(f"[DEBUG_ATT] det(R): {np.linalg.det(rotation_matrix):.6f}")
+    logger.debug(f"[DEBUG_ATT] PX: {px}, PY: {py}, PZ: {pz}")
+    logger.debug(
+        f"[DEBUG_ATT] 直交性: PX・PY={np.dot(px, py):.3e}, PY・PZ={np.dot(py, pz):.3e}, PZ・PX={np.dot(pz, px):.3e}",
+    )
+    logger.debug(f"[DEBUG_ATT] det(R): {np.linalg.det(rotation_matrix):.6f}")
 
     return rotation_matrix
 

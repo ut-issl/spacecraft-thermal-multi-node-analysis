@@ -5,6 +5,7 @@ import subprocess
 from datetime import datetime
 
 import pandas as pd
+from rich.logging import RichHandler
 
 logger = logging.getLogger(__name__)
 
@@ -156,11 +157,17 @@ def batch_analysis(config_file: str, log_file: str = "analysis_log.log"):
             success_count += 1
 
     # 実行結果のサマリー
-    logger.info(f"\n解析実行完了: {success_count}/{len(configs)} 成功")
+    logger.info(f"解析実行完了: {success_count}/{len(configs)} 成功")
 
 
 def main():
     parser = argparse.ArgumentParser(description="複数の解析条件を一括実行します。")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="詳細なログを表示します。",
+    )
     subparsers = parser.add_subparsers(dest="command", help="実行するコマンド")
 
     # 解析設定のテンプレートを作成するコマンド
@@ -181,6 +188,13 @@ def main():
     )
 
     args = parser.parse_args()
+
+    log_level = logging.DEBUG if args.verbose else logging.INFO
+    pkg_handler = RichHandler(level=log_level)
+    pkg_logger = logging.getLogger("spacecraft_thermal_multi_node_analysis")
+    pkg_logger.setLevel(log_level)
+    pkg_logger.addHandler(pkg_handler)
+    pkg_logger.propagate = False
 
     if args.command == "create-template":
         create_analysis_config_template(args.output_file)

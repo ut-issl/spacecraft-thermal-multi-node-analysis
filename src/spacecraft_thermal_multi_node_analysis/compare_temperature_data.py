@@ -6,6 +6,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from rich.logging import RichHandler
 
 logger = logging.getLogger(__name__)
 
@@ -180,6 +181,8 @@ def create_config_template(output_file: str = "comparison_config_template.csv"):
 
 def main():
     parser = argparse.ArgumentParser(description="温度データを比較し、差分を計算してCSVファイルに出力します。")
+    parser.add_argument("-v", "--verbose", action="store_true", help="詳細なログを表示")
+
     subparsers = parser.add_subparsers(dest="command", help="実行するコマンド")
 
     # 単一の比較を実行するコマンド
@@ -206,6 +209,13 @@ def main():
     )
 
     args = parser.parse_args()
+
+    log_level = logging.DEBUG if args.verbose else logging.INFO
+    pkg_handler = RichHandler(level=log_level)
+    pkg_logger = logging.getLogger("spacecraft_thermal_multi_node_analysis")
+    pkg_logger.setLevel(log_level)
+    pkg_logger.addHandler(pkg_handler)
+    pkg_logger.propagate = False
 
     if args.command == "single":
         compare_temperature_data(args.td_file, args.output_file, args.output_dir)
