@@ -15,14 +15,12 @@
 
 ## インストール
 
-このプロジェクトは [uv](https://github.com/astral-sh/uv) で管理されています。
+以下、[`uv`](https://docs.astral.sh/uv/)を使用したワークフローを前提とします。
+
+`uv add`コマンドでプロジェクトに`spacecraft-thermal-multi-node-analysis`を追加します。
 
 ```bash
-# uvのインストール
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# 依存関係のインストール
-uv sync
+uv add spacecraft-thermal-multi-node-analysis
 ```
 
 ## 使い方
@@ -268,4 +266,16 @@ uv run compare-temperature-data batch comparison_config_template.csv
 ```bash
 uv run compare-temperature-data single <td_file> <output_file> --output-dir custom_output
 uv run compare-temperature-data batch <config_file> --output-dir custom_output
+```
+
+## 開発者向け
+
+このプロジェクトは [uv](https://github.com/astral-sh/uv) で管理されています。
+
+```bash
+# uvのインストール
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# 依存関係のインストール
+uv sync
 ```
