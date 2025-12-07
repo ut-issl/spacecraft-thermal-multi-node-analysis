@@ -174,6 +174,16 @@ def run_earth_orbit_analysis(
         strict=True,
     )
 
+    # 2. Attitude rotation matrix calculation
+    rotation_matrix_ts = [
+        calculate_satellite_attitude(
+            position=position,
+            velocity=velocity,
+            attitude_config=attitude_mode,
+        )
+        for position, velocity in zip(position_ts, velocity_ts, strict=True)
+    ]
+
     # 温度履歴の記録
     temperatures = {surface_name: [node.get_temperature(surface_name)] for surface_name in node.surfaces.keys()}
 
@@ -195,23 +205,16 @@ def run_earth_orbit_analysis(
         if t_idx == 0:
             continue  # t=0は既に初期値が記録されているのでスキップ
 
-        # 姿勢行列を計算
-        rotation_matrix = calculate_satellite_attitude(
-            position=position_ts[t_idx],
-            velocity=velocity_ts[t_idx],
-            attitude_config=attitude_mode,
-        )
-
         # 太陽方向ベクトル（衛星固定系）
         sun_vector = calculate_sun_vector_in_satellite_frame(
             time=t,
             period=period,
             beta_angle=beta_rad,
-            rotation_matrix=rotation_matrix,
+            rotation_matrix=rotation_matrix_ts[t_idx],
         )
 
         # 地球方向ベクトルとビューファクターを計算
-        earth_vector = rotation_matrix.T @ (
+        earth_vector = rotation_matrix_ts[t_idx].T @ (
             -position_ts[t_idx] / np.linalg.norm(position_ts[t_idx])
         )  # 衛星固定座標系に変換
         # 熱収支の計算と温度更新
