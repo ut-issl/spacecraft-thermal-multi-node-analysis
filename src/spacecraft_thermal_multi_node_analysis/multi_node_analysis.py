@@ -195,6 +195,11 @@ def run_earth_orbit_analysis(
         for t, rotation_matrix in zip(times, rotation_matrix_ts, strict=True)
     ]
 
+    earth_vector_ts = [
+        rotation_matrix.T @ (-position / np.linalg.norm(position))
+        for position, rotation_matrix in zip(position_ts, rotation_matrix_ts, strict=True)
+    ]
+
     # 温度履歴の記録
     temperatures = {surface_name: [node.get_temperature(surface_name)] for surface_name in node.surfaces.keys()}
 
@@ -216,14 +221,10 @@ def run_earth_orbit_analysis(
         if t_idx == 0:
             continue  # t=0は既に初期値が記録されているのでスキップ
 
-        # 地球方向ベクトルとビューファクターを計算
-        earth_vector = rotation_matrix_ts[t_idx].T @ (
-            -position_ts[t_idx] / np.linalg.norm(position_ts[t_idx])
-        )  # 衛星固定座標系に変換
         # 熱収支の計算と温度更新
         heat_balances = node.calculate_heat_balance(
             sun_vector=sun_vector_ts[t_idx],
-            earth_vector=earth_vector,
+            earth_vector=earth_vector_ts[t_idx],
             constants=constants,
             in_eclipse=in_eclipse_ts[t_idx],
             time=t,
