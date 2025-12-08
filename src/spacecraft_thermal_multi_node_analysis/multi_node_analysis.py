@@ -213,9 +213,6 @@ def run_earth_orbit_analysis(
     for component_name in node.components.keys():
         temperatures[component_name] = [node.get_component_temperature(component_name)]
 
-    # 蝕フラグの記録
-    eclipse_flags = [False]
-
     # 時間積分
     for t_idx, t in enumerate(times):
         if t_idx == 0:
@@ -246,10 +243,8 @@ def run_earth_orbit_analysis(
             temperatures[component_name].append(
                 node.get_component_temperature(component_name),
             )
-        # 蝕フラグの記録
-        eclipse_flags.append(bool(in_eclipse_ts[t_idx]))
 
-    return times.tolist(), temperatures, node.heat_input_records, eclipse_flags
+    return times.tolist(), temperatures, node.heat_input_records, list(in_eclipse_ts)
 
 
 def run_deep_space_analysis(
