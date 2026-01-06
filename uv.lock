@@ -733,6 +733,11 @@ test = [
     { name = "pytest" },
     { name = "pytest-datadir" },
 ]
+typing = [
+    { name = "pytest" },
+    { name = "pytest-datadir" },
+    { name = "ty" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -757,6 +762,11 @@ ruff = [{ name = "ruff", specifier = ">=0.14.3" }]
 test = [
     { name = "pytest", specifier = ">=8.4.2" },
     { name = "pytest-datadir", specifier = ">=1.8.0" },
+]
+typing = [
+    { name = "pytest", specifier = ">=8.4.2" },
+    { name = "pytest-datadir", specifier = ">=1.8.0" },
+    { name = "ty", specifier = ">=0.0.9" },
 ]
 
 [[package]]
