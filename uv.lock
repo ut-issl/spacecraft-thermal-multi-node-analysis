@@ -734,9 +734,11 @@ test = [
     { name = "pytest-datadir" },
 ]
 typing = [
+    { name = "pandas-stubs" },
     { name = "pytest" },
     { name = "pytest-datadir" },
     { name = "ty" },
+    { name = "types-pyyaml" },
 ]
 
 [package.metadata]
@@ -764,9 +766,11 @@ test = [
     { name = "pytest-datadir", specifier = ">=1.8.0" },
 ]
 typing = [
+    { name = "pandas-stubs", specifier = ">=2.3.2.250926" },
     { name = "pytest", specifier = ">=8.4.2" },
     { name = "pytest-datadir", specifier = ">=1.8.0" },
     { name = "ty", specifier = ">=0.0.9" },
+    { name = "types-pyyaml", specifier = ">=6.0.12.20250915" },
 ]
 
 [[package]]
