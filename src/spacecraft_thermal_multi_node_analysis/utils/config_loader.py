@@ -1,10 +1,16 @@
+from __future__ import annotations
+
 import os.path
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 import pandas as pd
 import yaml
 
 from .dataclasses import ComponentProperties, MaterialProperties, SurfaceMaterial
+
+if TYPE_CHECKING:
+    from .satellite_config import PanelOpticalConfig, PanelStructuralConfig
 
 
 def load_constants(settings_dir: str) -> dict:
@@ -13,7 +19,9 @@ def load_constants(settings_dir: str) -> dict:
         return yaml.safe_load(f)
 
 
-def load_surface_properties(settings_dir: str) -> tuple[dict[str, SurfaceMaterial], dict[str, list[dict[str, float]]]]:
+def load_surface_properties(
+    settings_dir: str,
+) -> tuple[dict[str, SurfaceMaterial], dict[str, dict[Literal["outside", "inside"], list[PanelOpticalConfig]]]]:
     """表面光学特性を読み込む"""
     with open(
         os.path.join(settings_dir, "surface_properties.yaml"),
@@ -66,7 +74,7 @@ def load_material_properties(settings_dir: str) -> dict[str, MaterialProperties]
     return material_properties
 
 
-def load_panel_material_assignments(settings_dir: str) -> dict[str, list[dict[str, float]]]:
+def load_panel_material_assignments(settings_dir: str) -> dict[str, list[PanelStructuralConfig]]:
     """パネルの材料構成を読み込む"""
     with open(
         os.path.join(settings_dir, "material_properties.yaml"),

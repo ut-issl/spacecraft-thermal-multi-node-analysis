@@ -467,7 +467,10 @@ def main():
         for surface in create_satellite_surfaces(config, constants):
             node_for_vf.add_surface(surface)
         vf_csv_path = os.path.join(output_path, "view_factor_matrix.csv")
-        node_for_vf.view_factor_matrix.to_csv(vf_csv_path)
+        if node_for_vf.view_factor_matrix is not None:
+            node_for_vf.view_factor_matrix.to_csv(vf_csv_path)
+        else:
+            logger.warning("ビューイングファクター行列が計算されていません。CSV出力をスキップします。")
         # RijマトリクスもCSV出力
         node_for_vf.save_rij_matrix(output_path)
 
@@ -527,7 +530,10 @@ def main():
         for surface in create_satellite_surfaces(config, constants):
             node_for_vf.add_surface(surface)
         vf_csv_path = os.path.join(output_path, "view_factor_matrix.csv")
-        node_for_vf.view_factor_matrix.to_csv(vf_csv_path)
+        if node_for_vf.view_factor_matrix is not None:
+            node_for_vf.view_factor_matrix.to_csv(vf_csv_path)
+        else:
+            logger.warning("ビューイングファクター行列が計算されていません。CSV出力をスキップします。")
         # RijマトリクスもCSV出力
         node_for_vf.save_rij_matrix(output_path)
         # 結果のプロットと保存（地球周回と同じ関数を使う）

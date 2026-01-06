@@ -1,3 +1,4 @@
+import logging
 import os.path
 from pathlib import Path
 
@@ -9,6 +10,8 @@ from rich import print  # noqa: A004
 import spacecraft_thermal_multi_node_analysis as stmna
 from spacecraft_thermal_multi_node_analysis.utils.config_loader import load_constants
 from spacecraft_thermal_multi_node_analysis.utils.satellite_config import SatelliteConfiguration
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture
@@ -71,7 +74,10 @@ def test_run_earth_orbit_analysis(
     for surface in create_satellite_surfaces(ref_satellite_config, constants):
         node_for_vf.add_surface(surface)
     vf_csv_path = os.path.join(output_dir, "view_factor_matrix.csv")
-    node_for_vf.view_factor_matrix.to_csv(vf_csv_path)
+    if node_for_vf.view_factor_matrix is not None:
+        node_for_vf.view_factor_matrix.to_csv(vf_csv_path)
+    else:
+        logger.warning("View factor matrix is None, cannot save to CSV.")
     # RijマトリクスもCSV出力
     node_for_vf.save_rij_matrix(str(output_dir))
 
@@ -116,7 +122,10 @@ def test_run_deep_space_analysis(
     for surface in create_satellite_surfaces(ref_satellite_config, constants):
         node_for_vf.add_surface(surface)
     vf_csv_path = os.path.join(output_dir, "view_factor_matrix.csv")
-    node_for_vf.view_factor_matrix.to_csv(vf_csv_path)
+    if node_for_vf.view_factor_matrix is not None:
+        node_for_vf.view_factor_matrix.to_csv(vf_csv_path)
+    else:
+        logger.warning("View factor matrix is None, cannot save to CSV.")
     # RijマトリクスもCSV出力
     node_for_vf.save_rij_matrix(str(output_dir))
 
