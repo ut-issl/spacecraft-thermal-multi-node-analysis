@@ -1,4 +1,6 @@
+import logging
 from dataclasses import dataclass
+from typing import Literal, TypedDict
 
 import pandas as pd
 
@@ -12,6 +14,19 @@ from .config_loader import (
 )
 from .dataclasses import ComponentProperties, MaterialProperties, SurfaceMaterial
 
+logger = logging.getLogger(__name__)
+
+
+class PanelStructuralConfig(TypedDict):
+    material: str
+    ratio: float
+    thickness: float
+
+
+class PanelOpticalConfig(TypedDict):
+    material: str
+    ratio: float
+
 
 @dataclass
 class SatelliteConfiguration:
@@ -22,12 +37,12 @@ class SatelliteConfiguration:
     surface_materials: dict[str, SurfaceMaterial]  # 表面光学特性
     surface_optical_assignments: dict[
         str,
-        dict[str, list[dict[str, float]]],
+        dict[Literal["outside", "inside"], list[PanelOpticalConfig]],
     ]  # 面の表面光学特性割り当て（outside/inside）
     material_properties: dict[str, MaterialProperties]  # 材料物性
     panel_material_assignments: dict[
         str,
-        list[dict[str, float]],
+        list[PanelStructuralConfig],
     ]  # パネルの材料構成（材料名と厚み）
     conductance_matrix: pd.DataFrame | None  # パネル間の熱伝導率 [W/K]（Noneの場合は無効）
     enable_conductance: bool  # パネル間の熱伝導（Cij）を有効にするかどうか
@@ -90,7 +105,7 @@ class SatelliteConfiguration:
                 )
 
             # 材料の存在確認
-            for side in ["outside", "inside"]:
+            for side in ("outside", "inside"):
                 for opt in optical_configs[side]:
                     if opt["material"] not in surface_materials:
                         raise ValueError(

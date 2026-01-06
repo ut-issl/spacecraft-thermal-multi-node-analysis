@@ -133,7 +133,7 @@ def load_comparison_config(config_file: str) -> list[dict[str, str]]:
         raise ValueError(f"設定ファイルには以下のカラムが必要です: {required_columns}")
 
     # 設定を辞書のリストに変換
-    configs = config_df.to_dict("records")
+    configs: list[dict[str, str]] = config_df.to_dict("records")  # ty: ignore[invalid-assignment]
     return configs
 
 

@@ -428,8 +428,6 @@ class ThermalNode:
         """Rij（放射伝達行列）を用いた厳密な熱輻射計算（宇宙放射含む）"""
         # Rij, node_namesをキャッシュ
         if self._rij_cache is None or self._rij_names is None:
-            from .thermal_utils import calculate_radiative_conductance_matrix
-
             self._rij_cache, self._rij_names = calculate_radiative_conductance_matrix(
                 self.surfaces,
                 self.dimensions,
@@ -473,7 +471,7 @@ class ThermalNode:
             for other_name in self.surfaces.keys():
                 if surface_name != other_name:
                     # Cij * (Tj - Ti) の形式で計算
-                    cij = float(self.conductance_matrix.loc[surface_name, other_name])
+                    cij = float(self.conductance_matrix.loc[surface_name, other_name])  # ty: ignore[invalid-argument-type]
                     temp_diff = self.temperatures[other_name] - self.temperatures[surface_name]
                     heat += cij * temp_diff
             conductance_heat[surface_name] = heat
@@ -522,6 +520,8 @@ class ThermalNode:
                 albedo_heat = 0.0
                 earth_ir_heat = 0.0
                 if earth_vector is not None and (enable_albedo or enable_earth_ir):
+                    assert altitude is not None, "altitude should be provided when earth_vector is given."
+                    assert orbit_normal is not None, "orbit_normal should be provided when earth_vector is given."
                     albedo_heat, earth_ir_heat = surface.calculate_earth_heat(
                         earth_vector,
                         solar_constant,
@@ -574,6 +574,8 @@ class ThermalNode:
                 albedo_heat = 0.0
                 earth_ir_heat = 0.0
                 if earth_vector is not None and (enable_albedo or enable_earth_ir):
+                    assert altitude is not None, "altitude should be provided when earth_vector is given."
+                    assert orbit_normal is not None, "orbit_normal should be provided when earth_vector is given."
                     albedo_heat, earth_ir_heat = surface.calculate_earth_heat(
                         earth_vector,
                         solar_constant,
@@ -704,6 +706,7 @@ class ThermalNode:
         # MLIノードの温度も追加
         for surface_name, surface in self.surfaces.items():
             if surface.has_mli:
+                assert surface.mli_node is not None, "surface.mli_node should not be none if surface.has_mli is True."
                 temps[f"{surface_name}_MLI"] = surface.mli_node.temperature
         return temps
 
@@ -713,6 +716,7 @@ class ThermalNode:
             raise ValueError(f"面 {surface_name} は存在しません")
         surface = self.surfaces[surface_name]
         if surface.has_mli:
+            assert surface.mli_node is not None, "surface.mli_node should not be none if surface.has_mli is True."
             return surface.mli_node.temperature
         return None
 
@@ -724,7 +728,6 @@ class ThermalNode:
         """Rij（放射伝達行列）をCSVで出力
         行・列ともに面名+SPACEラベル付き
         """
-        from .thermal_utils import calculate_radiative_conductance_matrix
 
         Rij, node_names = calculate_radiative_conductance_matrix(
             self.surfaces,
