@@ -148,55 +148,82 @@ def run_earth_orbit_analysis(
     # コンダクタンス行列の設定
     node.set_conductance_matrix(config.conductance_matrix, config.enable_conductance)
 
-    # 温度履歴の記録
-    temperatures = {surface_name: [node.get_temperature(surface_name)] for surface_name in node.surfaces.keys()}
-    # MLIノードの温度も記録
-    for surface_name, surface in node.surfaces.items():
-        if surface.has_mli:
-            assert surface.mli_node is not None
-            temperatures[f"{surface_name}_MLI"] = [surface.mli_node.temperature]
-    # コンポーネントの温度も記録
-    for component_name in node.components.keys():
-        temperatures[component_name] = [node.get_component_temperature(component_name)]
+    # Time-series calculation starts here
+    # 1. Orbital calculations
+    # 2. Attitude calculations
+    # 3. Sun vector calculations
+    # 4. Heat balance calculations
+    # 5. Temperature updates
 
-    # 蝕フラグの記録
-    eclipse_flags = [False]
+    # 1. Orbital calculations
+    # 衛星の位置・速度ベクトルと蝕の状態を計算
+    # Calculation for t=0 is not necessary here, but done for simplicity
+    # TODO: Check if we don't need to pass the absolte time here
+    position_ts, velocity_ts, in_eclipse_ts = zip(
+        *[
+            calculate_satellite_position(
+                time=float(t),
+                period=period,
+                altitude=altitude,
+                orbit_normal=orbit_normal,
+                e1=e1,
+                e2=e2,
+            )
+            for t in times
+        ],
+        strict=True,
+    )
 
-    # 時間積分
-    for t in times[1:]:
-        # 衛星の位置・速度ベクトルと蝕の状態を計算
-        position, velocity, in_eclipse = calculate_satellite_position(
-            time=t,
-            period=period,
-            altitude=altitude,
-            orbit_normal=orbit_normal,
-            e1=e1,
-            e2=e2,
-        )
-
-        # 姿勢行列を計算
-        rotation_matrix = calculate_satellite_attitude(
+    # 2. Attitude rotation matrix calculation
+    rotation_matrix_ts = [
+        calculate_satellite_attitude(
             position=position,
             velocity=velocity,
             attitude_config=attitude_mode,
         )
+        for position, velocity in zip(position_ts, velocity_ts, strict=True)
+    ]
 
-        # 太陽方向ベクトル（衛星固定系）
-        sun_vector = calculate_sun_vector_in_satellite_frame(
+    # 3. Sun vector calculation
+    sun_vector_ts = [
+        calculate_sun_vector_in_satellite_frame(
             time=t,
             period=period,
             beta_angle=beta_rad,
             rotation_matrix=rotation_matrix,
         )
+        for t, rotation_matrix in zip(times, rotation_matrix_ts, strict=True)
+    ]
 
-        # 地球方向ベクトルとビューファクターを計算
-        earth_vector = rotation_matrix.T @ (-position / np.linalg.norm(position))  # 衛星固定座標系に変換
+    earth_vector_ts = [
+        rotation_matrix.T @ (-position / np.linalg.norm(position))
+        for position, rotation_matrix in zip(position_ts, rotation_matrix_ts, strict=True)
+    ]
+
+    # 温度履歴の記録
+    temperatures = {surface_name: [node.get_temperature(surface_name)] for surface_name in node.surfaces.keys()}
+
+    # MLIノードの温度も記録
+    for surface_name, surface in node.surfaces.items():
+        if surface.has_mli:
+            assert surface.mli_node is not None
+            temperatures[f"{surface_name}_MLI"] = [surface.mli_node.temperature]
+
+    # コンポーネントの温度も記録
+    for component_name in node.components.keys():
+        temperatures[component_name] = [node.get_component_temperature(component_name)]
+
+    # 時間積分
+    for t_idx, t in enumerate(times):
+        if t_idx == 0:
+            continue  # t=0は既に初期値が記録されているのでスキップ
+
         # 熱収支の計算と温度更新
         heat_balances = node.calculate_heat_balance(
-            sun_vector=sun_vector,
-            earth_vector=earth_vector,
+            sun_vector=sun_vector_ts[t_idx],
+            earth_vector=earth_vector_ts[t_idx],
             constants=constants,
-            in_eclipse=in_eclipse,
+            in_eclipse=in_eclipse_ts[t_idx],
             time=t,
             altitude=altitude,
             orbit_normal=orbit_normal,
@@ -216,10 +243,8 @@ def run_earth_orbit_analysis(
             temperatures[component_name].append(
                 node.get_component_temperature(component_name),
             )
-        # 蝕フラグの記録
-        eclipse_flags.append(bool(in_eclipse))
 
-    return times.tolist(), temperatures, node.heat_input_records, eclipse_flags
+    return times.tolist(), temperatures, node.heat_input_records, list(in_eclipse_ts)
 
 
 def run_deep_space_analysis(

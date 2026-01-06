@@ -1,3 +1,15 @@
+"""軌道関連のユーティリティ関数群
+
+慣性座標系の定義：
+- X軸：太陽方向
+- Z軸：軌道面の法線ベクトルがXZ平面内にあるように設定
+- Y軸：右手系を形成するように設定
+
+時刻と基底ベクトルの関係：
+- 時刻0秒で衛星は軌道面内の第1基底ベクトル(e1)方向に位置
+- 衛星は反時計回りに軌道を周回
+"""
+
 import logging
 
 import numpy as np
@@ -109,6 +121,15 @@ def calculate_satellite_position(
     e2: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray, bool]:
     """衛星の位置ベクトル・速度ベクトルと蝕の状態を計算
+
+    Args:
+        time: 経過時間 [秒]
+        period: 軌道周期 [秒]
+        altitude: 軌道高度 [km]
+        orbit_normal: 軌道面の法線ベクトル
+        e1: 軌道面内の第1基底ベクトル
+        e2: 軌道面内の第2基底ベクトル
+
     Returns:
         position: 衛星の位置ベクトル [km]
         velocity: 衛星の速度ベクトル [km/s]
