@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 env:
-  UV_VERSION: "0.9.x"
+  UV_VERSION: "0.10.x"
 
 jobs:
   create-tag:
