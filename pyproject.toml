@@ -132,3 +132,6 @@ unfixable = [
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["INP001"]
 # "scripts/*" = ["INP001"]
+
+[tool.uv]
+exclude-newer = "7 days"
