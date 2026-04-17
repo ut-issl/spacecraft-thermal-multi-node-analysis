@@ -1,0 +1,15 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: ["config:best-practices", "helpers:pinGitHubActionDigestsToSemver"],
+  minimumReleaseAge: "7 days",
+  lockFileMaintenance: {
+    enabled: true,
+  },
+  labels: ["dependencies"],
+  packageRules: [
+    {
+      matchUpdateTypes: ["lockFileMaintenance"],
+      minimumReleaseAge: null,
+    },
+  ],
+}
