@@ -3,6 +3,7 @@ import os
 
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from .orbit_utils import calculate_orbit_parameters
@@ -140,6 +141,9 @@ def plot_temperature_profile(
                     in_eclipse = True
                 elif not flag and in_eclipse:
                     end = times[i]
+                    assert start is not None, (
+                        "This line is executed only if `in_eclipse` is set to True, implying `start` is set."
+                    )
                     plt.axvspan(start, end, color="gray", alpha=0.2, zorder=0)
                     in_eclipse = False
             # 最後が蝕中で終わる場合
@@ -194,7 +198,7 @@ def save_temperature_data(times: list[float], temperatures: dict[str, list[float
     os.makedirs(output_dir, exist_ok=True)
 
     # Create dataframe
-    data = {"Time [s]": np.array(times)}
+    data: dict[str, npt.ArrayLike] = {"Time [s]": np.array(times)}
     for surface_name, temp_history in temperatures.items():
         # Convert Kelvin to Celsius
         temp_celsius = [temp - 273.15 for temp in temp_history]
