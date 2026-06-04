@@ -145,6 +145,10 @@ def run_earth_orbit_analysis(
     for component in config.components.values():
         node.add_component(component)
 
+    # 内部パネルの追加（任意）
+    for internal_panel in config.internal_panels.values():
+        node.add_internal_panel(internal_panel)
+
     # コンダクタンス行列の設定
     node.set_conductance_matrix(config.conductance_matrix, config.enable_conductance)
 
@@ -213,6 +217,10 @@ def run_earth_orbit_analysis(
     for component_name in node.components.keys():
         temperatures[component_name] = [node.get_component_temperature(component_name)]
 
+    # 内部パネルの温度も記録
+    for panel_name in node.internal_panels.keys():
+        temperatures[panel_name] = [node.get_internal_panel_temperature(panel_name)]
+
     # 時間積分
     for t_idx, t in enumerate(times):
         if t_idx == 0:
@@ -242,6 +250,11 @@ def run_earth_orbit_analysis(
         for component_name in node.components.keys():
             temperatures[component_name].append(
                 node.get_component_temperature(component_name),
+            )
+        # 内部パネルの温度も記録
+        for panel_name in node.internal_panels.keys():
+            temperatures[panel_name].append(
+                node.get_internal_panel_temperature(panel_name),
             )
 
     return times.tolist(), temperatures, node.heat_input_records, list(in_eclipse_ts)
@@ -286,6 +299,10 @@ def run_deep_space_analysis(
     # コンポーネントの追加
     for component in config.components.values():
         node.add_component(component)
+
+    # 内部パネルの追加（任意）
+    for internal_panel in config.internal_panels.values():
+        node.add_internal_panel(internal_panel)
 
     # コンダクタンス行列の設定
     node.set_conductance_matrix(config.conductance_matrix, config.enable_conductance)

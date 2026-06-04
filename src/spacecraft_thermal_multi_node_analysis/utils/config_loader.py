@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from .dataclasses import ComponentProperties, MaterialProperties, SurfaceMaterial
+from .dataclasses import ComponentProperties, InternalPanel, MaterialProperties, SurfaceMaterial
 
 if TYPE_CHECKING:
     from .satellite_config import PanelOpticalConfig, PanelStructuralConfig
@@ -134,3 +134,60 @@ def load_component_properties(settings_dir: str) -> dict[str, ComponentPropertie
         )
 
     return component_properties
+
+
+def load_internal_panels(
+    settings_dir: str,
+    material_properties: dict[str, MaterialProperties],
+) -> dict[str, InternalPanel]:
+    """内部パネル(外部輻射を持たない内部ノード)を読み込む（任意・ファイルが無ければ空）。
+
+    settings_dir/internal_panels.yaml の例:
+        internal_panels:
+          OPTICS:
+            name: "Optics Panel (SiC)"
+            material: "SiC"        # material_properties.yaml の材料名
+            area: 0.09             # [m^2]
+            thickness: 10.0        # [mm]
+            internal_heat: 2.0     # [W]（任意）
+            conductances:          # [W/K] 各構体パネルへの伝導結合
+              PX: 0.25
+              PZ: 0.30
+    質量は material+寸法、または mass[kg]+specific_heat[J/kg/K] で定義可。
+    """
+    file_path = os.path.join(settings_dir, "internal_panels.yaml")
+    if not os.path.exists(file_path):
+        return {}
+
+    with open(file_path, encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+
+    internal_panels: dict[str, InternalPanel] = {}
+    for key, props in (data.get("internal_panels") or {}).items():
+        # 熱容量の決定: material+寸法 を優先、無ければ mass+specific_heat
+        if "material" in props:
+            mat_name = props["material"]
+            if mat_name not in material_properties:
+                raise ValueError(f"内部パネル {key} の材料 {mat_name} が material_properties に定義されていません")
+            mat = material_properties[mat_name]
+            volume = float(props["area"]) * (float(props["thickness"]) * 1e-3)  # area[m^2] x thickness[mm->m]
+            heat_capacity = mat.density * volume * mat.specific_heat
+        elif "mass" in props and "specific_heat" in props:
+            heat_capacity = float(props["mass"]) * float(props["specific_heat"])
+        else:
+            raise ValueError(
+                f"内部パネル {key} は material+area+thickness か mass+specific_heat のいずれかで熱容量を定義してください",
+            )
+
+        conductances = {str(p): float(g) for p, g in (props.get("conductances") or {}).items()}
+        if not conductances:
+            raise ValueError(f"内部パネル {key} には conductances（構体パネルへの伝導結合）が必要です")
+
+        internal_panels[key] = InternalPanel(
+            name=props.get("name", key),
+            heat_capacity_J_K=heat_capacity,
+            conductances=conductances,
+            internal_heat=float(props.get("internal_heat", 0.0)),
+        )
+
+    return internal_panels

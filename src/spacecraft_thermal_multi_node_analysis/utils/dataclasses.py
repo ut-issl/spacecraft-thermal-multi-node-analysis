@@ -65,3 +65,22 @@ class ComponentProperties:
     def heat_capacity(self) -> float:
         """熱容量 [J/K]を計算"""
         return self.mass * self.specific_heat
+
+
+@dataclass
+class InternalPanel:
+    """内部パネル（外部輻射を持たない内部ノード）。
+
+    任意個数を追加でき、複数の構体パネル(6面)へ熱コンダクタンスで結合される。
+    熱容量は material+寸法、または mass+specific_heat から定義（loaderで算出）。
+    外部輻射(太陽/アルベド/地球赤外)および面間輻射(view factor)は持たず、伝導のみで結合する。
+    """
+
+    name: str  # 表示名（CSV列名にもなる）
+    heat_capacity_J_K: float  # 熱容量 [J/K]
+    conductances: dict[str, float]  # {構体パネル名: 熱コンダクタンス [W/K]}
+    internal_heat: float = 0.0  # 自前発熱 [W]（任意）
+
+    @property
+    def heat_capacity(self) -> float:
+        return self.heat_capacity_J_K
