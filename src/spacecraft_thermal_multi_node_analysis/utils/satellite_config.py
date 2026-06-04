@@ -8,11 +8,12 @@ from .config_loader import (
     load_component_properties,
     load_conductance_matrix,
     load_constants,
+    load_internal_panels,
     load_material_properties,
     load_panel_material_assignments,
     load_surface_properties,
 )
-from .dataclasses import ComponentProperties, MaterialProperties, SurfaceMaterial
+from .dataclasses import ComponentProperties, InternalPanel, MaterialProperties, SurfaceMaterial
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,7 @@ class SatelliteConfiguration:
     conductance_matrix: pd.DataFrame | None  # パネル間の熱伝導率 [W/K]（Noneの場合は無効）
     enable_conductance: bool  # パネル間の熱伝導（Cij）を有効にするかどうか
     components: dict[str, ComponentProperties]  # コンポーネントの熱物性値
+    internal_panels: dict[str, InternalPanel]  # 内部パネル（任意・外部輻射なし・複数面へ伝導結合）
 
     @classmethod
     def from_config_files(cls, settings_dir: str) -> "SatelliteConfiguration":
@@ -58,6 +60,7 @@ class SatelliteConfiguration:
         material_properties = load_material_properties(settings_dir)
         panel_material_assignments = load_panel_material_assignments(settings_dir)
         components = load_component_properties(settings_dir)
+        internal_panels = load_internal_panels(settings_dir, material_properties)
 
         # コンダクタンス行列の有効/無効を取得
         enable_conductance = constants["analysis_parameters"].get(
@@ -119,6 +122,14 @@ class SatelliteConfiguration:
                     f"コンポーネント {name} の取り付けパネル {component.mounting_panel} が存在しません",
                 )
 
+        # 内部パネルの設定を検証（結合先パネルが存在するか）
+        for name, ipanel in internal_panels.items():
+            for panel_name in ipanel.conductances:
+                if panel_name not in panel_material_assignments:
+                    raise ValueError(
+                        f"内部パネル {name} の結合先パネル {panel_name} が存在しません",
+                    )
+
         return cls(
             dimensions=constants["satellite_dimensions"],
             internal_heat=constants["internal_heat"],  # 面ごとの内部発熱をそのまま使用
@@ -129,4 +140,5 @@ class SatelliteConfiguration:
             conductance_matrix=conductance_matrix,
             enable_conductance=enable_conductance,
             components=components,
+            internal_panels=internal_panels,
         )

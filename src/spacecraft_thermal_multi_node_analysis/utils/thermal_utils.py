@@ -11,6 +11,7 @@ from .config_loader import (
 from .dataclasses import (
     ComponentProperties,
     HeatInputRecord,
+    InternalPanel,
     MaterialProperties,
     MLINode,
     SurfaceMaterial,
@@ -386,6 +387,9 @@ class ThermalNode:
         # コンポーネント関連の属性を追加
         self.components: dict[str, ComponentProperties] = {}
         self.component_temperatures: dict[str, float] = {}
+        # 内部パネル（外部輻射なし・複数面へ伝導結合）
+        self.internal_panels: dict[str, InternalPanel] = {}
+        self.internal_panel_temperatures: dict[str, float] = {}
 
     def add_surface(self, surface: Surface):
         """面を追加し、初期温度を設定"""
@@ -643,6 +647,18 @@ class ThermalNode:
         # コンポーネントの熱収支を追加
         heat_balances.update(component_heat_balances)
 
+        # 内部パネルの熱収支を計算（外部輻射なし、複数構体パネルへの伝導 + 自前発熱）
+        for panel in self.internal_panels.values():
+            panel_node_temp = self.internal_panel_temperatures[panel.name]
+            node_heat = panel.internal_heat
+            for surface_name, conductance in panel.conductances.items():
+                surface_temp = self.temperatures[surface_name]
+                q = conductance * (surface_temp - panel_node_temp)  # 構体→内部パネル
+                node_heat += q
+                # 反作用: 構体パネル側は同量を失う（エネルギー保存）
+                heat_balances[surface_name] = heat_balances.get(surface_name, 0.0) - q
+            heat_balances[panel.name] = node_heat
+
         return heat_balances
 
     def update_temperature(
@@ -692,6 +708,16 @@ class ThermalNode:
                 self.component_temperatures[component_name] += temp_change
                 temperature_changes[component_name] = temp_change
 
+        # 内部パネルの温度更新
+        for panel_name, heat_balance in heat_balances.items():
+            if panel_name in self.internal_panels:
+                heat_capacity = self.internal_panels[panel_name].heat_capacity
+                temp_change = heat_balance * time_step / heat_capacity
+                max_temp_change = 100.0  # 最大温度変化 [K/step]
+                temp_change = np.clip(temp_change, -max_temp_change, max_temp_change)
+                self.internal_panel_temperatures[panel_name] += temp_change
+                temperature_changes[panel_name] = temp_change
+
         return temperature_changes
 
     def get_temperature(self, surface_name: str) -> float:
@@ -708,6 +734,8 @@ class ThermalNode:
             if surface.has_mli:
                 assert surface.mli_node is not None, "surface.mli_node should not be none if surface.has_mli is True."
                 temps[f"{surface_name}_MLI"] = surface.mli_node.temperature
+        # 内部パネルの温度も追加
+        temps.update(self.internal_panel_temperatures)
         return temps
 
     def get_mli_temperature(self, surface_name: str) -> float | None:
@@ -752,6 +780,31 @@ class ThermalNode:
         if component_name not in self.component_temperatures:
             raise ValueError(f"コンポーネント {component_name} は存在しません")
         return self.component_temperatures[component_name]
+
+    def add_internal_panel(self, panel: InternalPanel):
+        """内部パネルを追加し、初期温度を設定。
+
+        結合先の構体パネルが存在することを確認し、初期温度は結合先パネル温度の平均にする。
+        """
+        for surface_name in panel.conductances:
+            if surface_name not in self.surfaces:
+                raise ValueError(
+                    f"内部パネル {panel.name} の結合先パネル {surface_name} が存在しません",
+                )
+        self.internal_panels[panel.name] = panel
+        # 初期温度は結合先パネル温度の平均（無ければ initial_temp）
+        if panel.conductances:
+            self.internal_panel_temperatures[panel.name] = float(
+                np.mean([self.temperatures[s] for s in panel.conductances]),
+            )
+        else:
+            self.internal_panel_temperatures[panel.name] = self.initial_temp
+
+    def get_internal_panel_temperature(self, panel_name: str) -> float:
+        """特定の内部パネルの温度を取得"""
+        if panel_name not in self.internal_panel_temperatures:
+            raise ValueError(f"内部パネル {panel_name} は存在しません")
+        return self.internal_panel_temperatures[panel_name]
 
 
 def calculate_radiative_conductance_matrix(
