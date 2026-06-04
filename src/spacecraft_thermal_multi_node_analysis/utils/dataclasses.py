@@ -60,11 +60,23 @@ class ComponentProperties:
     specific_heat: float  # 比熱 [J/kg/K]
     mounting_panel: str  # 取り付けパネル名
     thermal_conductance: float  # 締結部の熱コンダクタンス [W/K]
+    internal_heat: float = 0.0  # コンポーネント自身の定常発熱 [W]（電子機器の消費電力等）
+    heater_setpoint_K: float | None = None  # サーモスタット式ヒータの設定温度 [K]（Noneでヒータ無効）
+    heater_power_W: float = 0.0  # ヒータの最大投入電力 [W]（component_temp < setpoint のとき投入）
 
     @property
     def heat_capacity(self) -> float:
         """熱容量 [J/K]を計算"""
         return self.mass * self.specific_heat
+
+    def heater_heat(self, component_temp_K: float) -> float:
+        """サーモスタット式ヒータの投入熱 [W] を返す（ON/OFF制御）。
+
+        設定温度未満なら heater_power_W を投入、それ以上なら0。
+        """
+        if self.heater_setpoint_K is None:
+            return 0.0
+        return self.heater_power_W if component_temp_K < self.heater_setpoint_K else 0.0
 
 
 @dataclass

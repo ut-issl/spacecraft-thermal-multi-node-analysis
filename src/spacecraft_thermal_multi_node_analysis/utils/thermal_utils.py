@@ -642,6 +642,10 @@ class ThermalNode:
             component_temp = self.component_temperatures[component.name]
             temp_diff = panel_temp - component_temp
             heat = component.thermal_conductance * temp_diff
+            # コンポーネント自身の発熱（電子機器の消費電力等）を加算
+            heat += component.internal_heat
+            # サーモスタット式ヒータ（設定温度未満なら投入）を加算
+            heat += component.heater_heat(component_temp)
             component_heat_balances[component.name] = heat
 
         # コンポーネントの熱収支を追加
