@@ -125,12 +125,19 @@ def load_component_properties(settings_dir: str) -> dict[str, ComponentPropertie
     # コンポーネントの定義を読み込み
     component_properties = {}
     for name, props in data["component_properties"].items():
+        # オプション: コンポーネント自身の発熱 / サーモスタット式ヒータ
+        #   internal_heat: 定常発熱 [W]
+        #   heater: {setpoint_K: 設定温度[K], power_W: 最大投入電力[W]}
+        heater = props.get("heater", {}) or {}
         component_properties[name] = ComponentProperties(
             name=props["name"],
             mass=props["mass"],
             specific_heat=props["specific_heat"],
             mounting_panel=props["mounting"]["panel"],
             thermal_conductance=props["mounting"]["thermal_conductance"],
+            internal_heat=props.get("internal_heat", 0.0),
+            heater_setpoint_K=heater.get("setpoint_K"),
+            heater_power_W=heater.get("power_W", 0.0),
         )
 
     return component_properties
@@ -183,11 +190,16 @@ def load_internal_panels(
         if not conductances:
             raise ValueError(f"内部パネル {key} には conductances（構体パネルへの伝導結合）が必要です")
 
+        # オプション: サーモスタット式ヒータ heater: {setpoint_K, power_W}
+        heater = props.get("heater", {}) or {}
+
         internal_panels[key] = InternalPanel(
             name=props.get("name", key),
             heat_capacity_J_K=heat_capacity,
             conductances=conductances,
             internal_heat=float(props.get("internal_heat", 0.0)),
+            heater_setpoint_K=heater.get("setpoint_K"),
+            heater_power_W=float(heater.get("power_W", 0.0)),
         )
 
     return internal_panels

@@ -642,15 +642,21 @@ class ThermalNode:
             component_temp = self.component_temperatures[component.name]
             temp_diff = panel_temp - component_temp
             heat = component.thermal_conductance * temp_diff
+            # コンポーネント自身の発熱（電子機器の消費電力等）を加算
+            heat += component.internal_heat
+            # サーモスタット式ヒータ（設定温度未満なら投入）を加算
+            heat += component.heater_heat(component_temp)
             component_heat_balances[component.name] = heat
 
         # コンポーネントの熱収支を追加
         heat_balances.update(component_heat_balances)
 
-        # 内部パネルの熱収支を計算（外部輻射なし、複数構体パネルへの伝導 + 自前発熱）
+        # 内部パネルの熱収支を計算（外部輻射なし、複数構体パネルへの伝導 + 自前発熱 + ヒータ）
         for panel in self.internal_panels.values():
             panel_node_temp = self.internal_panel_temperatures[panel.name]
             node_heat = panel.internal_heat
+            # サーモスタット式ヒータ（設定温度未満なら投入）→ 光学パネルを設定温度で温調
+            node_heat += panel.heater_heat(panel_node_temp)
             for surface_name, conductance in panel.conductances.items():
                 surface_temp = self.temperatures[surface_name]
                 q = conductance * (surface_temp - panel_node_temp)  # 構体→内部パネル
