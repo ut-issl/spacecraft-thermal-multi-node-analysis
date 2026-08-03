@@ -124,6 +124,7 @@ ignore = [
   # "ERA001",  # commented-out-code
   "PLR0913",  # Too many arguments in function definition
   "C901",  # too complex
+  "CPY001",  # Missing copyright notice at top of file
 ]
 unfixable = [
   "F401",  # Prevent auto-fix for unused imports
