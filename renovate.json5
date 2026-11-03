@@ -14,6 +14,13 @@
       pinDigests: false,
     },
     {
+      // release.yaml is not onboarded to actions.lock (see its header comment), so keep digest pins there.
+      description: "Keep inline digest pins in the release workflow",
+      matchManagers: ["github-actions"],
+      matchFileNames: [".github/workflows/release.yaml"],
+      pinDigests: true,
+    },
+    {
       matchUpdateTypes: ["lockFileMaintenance"],
       minimumReleaseAge: null,
     },
