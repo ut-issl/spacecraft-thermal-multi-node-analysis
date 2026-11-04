@@ -1,3 +1,9 @@
+# This workflow is intentionally NOT onboarded to .github/workflows/actions.lock.
+# pypa/gh-action-pypi-publish picks its container image from github.action_ref,
+# which under a lockfile is the tag written here, not the locked commit, so the
+# image tag would be mutable. Keep these actions SHA-pinned, and
+# do not run plain `gh actions-lock` (which onboards every workflow); pass the
+# other workflow paths explicitly instead.
 name: Publish Python 🐍 distribution 📦 to PyPI and TestPyPI
 
 on:
