@@ -5,11 +5,11 @@ version: 'v0.0.3'
 workflows:
     '.github/workflows/actionlint.yml':
         - 'actions/checkout@v7.0.1'
-        - 'reviewdog/action-actionlint@v1.80.6'
+        - 'reviewdog/action-actionlint@v1.81.1'
     '.github/workflows/ci.yaml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-python@v7.1.0'
-        - 'astral-sh/setup-uv@v10.3.2'
+        - 'astral-sh/setup-uv@v10.3.3'
     '.github/workflows/labeler.yml':
         - 'actions/checkout@v7.0.1'
         - 'crazy-max/ghaction-github-labeler@v6.0.0'
@@ -24,9 +24,9 @@ dependencies:
         commit: 'sha1-6d4fd22b20465ccc0f7354476588e8df7c9ca0e0'
         owner_id: 44036562
         repo_id: 192625525
-    'astral-sh/setup-uv@v10.3.2':
-        ref: 'v10.3.2'
-        commit: 'sha1-07a047e608db84b3d8c06cd9a7c7dcc9c355c18e'
+    'astral-sh/setup-uv@v10.3.3':
+        ref: 'v10.3.3'
+        commit: 'sha1-68559e99cc807c1eb7e9238fd43a15bba460eec2'
         owner_id: 115962839
         repo_id: 846733598
     'crazy-max/ghaction-github-labeler@v6.0.0':
@@ -34,8 +34,8 @@ dependencies:
         commit: 'sha1-548a7c3603594ec17c819e1239f281a3b801ab4d'
         owner_id: 1951866
         repo_id: 216050313
-    'reviewdog/action-actionlint@v1.80.6':
-        ref: 'v1.80.6'
-        commit: 'sha1-48e36f54d8da326b83ab061aee2cc5e01b5ca46f'
+    'reviewdog/action-actionlint@v1.81.1':
+        ref: 'v1.81.1'
+        commit: 'sha1-619a81ec64ff8c0211cd6146eb2b21e8f1d7f440'
         owner_id: 48765237
         repo_id: 385059686
