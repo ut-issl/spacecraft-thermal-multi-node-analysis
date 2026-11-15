@@ -5,7 +5,7 @@ version: 'v0.0.3'
 workflows:
     '.github/workflows/actionlint.yml':
         - 'actions/checkout@v7.0.1'
-        - 'reviewdog/action-actionlint@v1.81.1'
+        - 'reviewdog/action-actionlint@v1.83.0'
     '.github/workflows/ci.yaml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-python@v7.1.0'
@@ -34,8 +34,8 @@ dependencies:
         commit: 'sha1-548a7c3603594ec17c819e1239f281a3b801ab4d'
         owner_id: 1951866
         repo_id: 216050313
-    'reviewdog/action-actionlint@v1.81.1':
-        ref: 'v1.81.1'
-        commit: 'sha1-619a81ec64ff8c0211cd6146eb2b21e8f1d7f440'
+    'reviewdog/action-actionlint@v1.83.0':
+        ref: 'v1.83.0'
+        commit: 'sha1-a7d35aaf8c309203a4ae861d32b7bd490baa7bf3'
         owner_id: 48765237
         repo_id: 385059686
